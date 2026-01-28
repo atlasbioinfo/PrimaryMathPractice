@@ -155,8 +155,28 @@ function handleLogout() {
   showUserDropdown.value = false
 }
 
+// Helper function to save all current user data to localStorage
+function saveCurrentUserData() {
+  const currentProfileId = profilesStore.currentProfileId
+  if (!currentProfileId) return
+
+  // Save all user-specific stores
+  localStorage.setItem(`mathGame_${currentProfileId}_user`, JSON.stringify({
+    gender: userStore.gender,
+    username: userStore.username,
+    createdAt: userStore.createdAt
+  }))
+  localStorage.setItem(`mathGame_${currentProfileId}_stats`, JSON.stringify(statsStore.$state))
+  localStorage.setItem(`mathGame_${currentProfileId}_stickers`, JSON.stringify(stickersStore.$state))
+  localStorage.setItem(`mathGame_${currentProfileId}_progress`, JSON.stringify(progressStore.$state))
+  localStorage.setItem(`mathGame_${currentProfileId}_coins`, JSON.stringify(coinsStore.$state))
+}
+
 function handleAddUser({ name, gender }) {
   if (!gender) return
+
+  // Save current user's data before switching
+  saveCurrentUserData()
 
   // Create new profile
   const profileId = profilesStore.createProfile(name || null, gender)
@@ -164,21 +184,17 @@ function handleAddUser({ name, gender }) {
   // Switch to the new profile
   profilesStore.switchProfile(profileId)
 
-  // Reset all user stores for fresh start
-  userStore.reset()
-  statsStore.reset()
-  stickersStore.reset()
-  progressStore.reset()
-  coinsStore.reset()
-
-  // Set the new user data
-  userStore.setUser(name || null, gender)
+  // Manually save profiles to ensure persistence before reload
+  localStorage.setItem('mathGame_profiles', JSON.stringify({
+    profiles: profilesStore.profiles,
+    currentProfileId: profilesStore.currentProfileId
+  }))
 
   // Close modal
   showAddUserModal.value = false
   showUserDropdown.value = false
 
-  // Reload page to ensure clean state
+  // Reload page to load fresh state for new user
   window.location.reload()
 }
 
@@ -186,8 +202,17 @@ function handleSwitchUser(profileId) {
   const profile = profilesStore.getProfile(profileId)
   if (!profile) return
 
+  // Save current user's data before switching
+  saveCurrentUserData()
+
   // Switch profile
   profilesStore.switchProfile(profileId)
+
+  // Manually save profiles to ensure persistence before reload
+  localStorage.setItem('mathGame_profiles', JSON.stringify({
+    profiles: profilesStore.profiles,
+    currentProfileId: profilesStore.currentProfileId
+  }))
 
   // Close dropdown
   showUserDropdown.value = false

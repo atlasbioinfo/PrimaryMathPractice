@@ -79,6 +79,7 @@
 import { ref, computed } from 'vue'
 import { useUserStore } from '../stores/user'
 import { useLocaleStore } from '../stores/locale'
+import { useSound } from '../composables/useSound'
 
 const props = defineProps({
   modelValue: {
@@ -95,6 +96,7 @@ const emit = defineEmits(['update:modelValue', 'confirm'])
 
 const userStore = useUserStore()
 const localeStore = useLocaleStore()
+const { playKeySound, playDeleteSound, playConfirmSound } = useSound()
 
 const theme = computed(() => userStore.theme.name)
 const t = computed(() => localeStore.t)
@@ -115,6 +117,7 @@ function pressKey(num) {
 
   if (currentStr.length >= props.maxLength) return
 
+  playKeySound()
   const newStr = currentStr + String(num)
   const newValue = Number(newStr)
 
@@ -135,6 +138,7 @@ function deleteKey() {
 
   if (currentValue === null) return
 
+  playDeleteSound()
   const currentStr = String(currentValue)
   const newStr = currentStr.slice(0, -1)
 
@@ -146,6 +150,7 @@ function deleteKey() {
 
 function confirm() {
   if (!canConfirm.value) return
+  playConfirmSound()
   emit('confirm')
 }
 </script>
@@ -188,7 +193,7 @@ function confirm() {
   font-size: 32px;
   font-weight: 700;
   color: #ccc;
-  font-family: 'Comic Sans MS', cursive, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   padding: 8px 24px;
   border-radius: 12px;
   cursor: pointer;
@@ -280,7 +285,7 @@ function confirm() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Comic Sans MS', cursive, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   position: relative;
   overflow: hidden;
 }

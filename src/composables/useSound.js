@@ -150,6 +150,115 @@ export function useSound() {
     }
   }
 
+  // Keyboard key press sound - short, crisp tap
+  function playKeySound() {
+    if (isMuted.value) return
+
+    // Trigger haptic feedback on supported devices
+    triggerHaptic('light')
+
+    try {
+      const ctx = getAudioContext()
+      const oscillator = ctx.createOscillator()
+      const gainNode = ctx.createGain()
+
+      oscillator.connect(gainNode)
+      gainNode.connect(ctx.destination)
+
+      // Short crisp pop sound
+      oscillator.frequency.setValueAtTime(600, ctx.currentTime)
+      oscillator.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.03)
+      oscillator.type = 'sine'
+
+      gainNode.gain.setValueAtTime(0.15, ctx.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05)
+
+      oscillator.start(ctx.currentTime)
+      oscillator.stop(ctx.currentTime + 0.05)
+    } catch (e) {
+      console.log('Audio not supported')
+    }
+  }
+
+  // Delete key sound - slightly different tone
+  function playDeleteSound() {
+    if (isMuted.value) return
+
+    triggerHaptic('light')
+
+    try {
+      const ctx = getAudioContext()
+      const oscillator = ctx.createOscillator()
+      const gainNode = ctx.createGain()
+
+      oscillator.connect(gainNode)
+      gainNode.connect(ctx.destination)
+
+      oscillator.frequency.setValueAtTime(300, ctx.currentTime)
+      oscillator.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.05)
+      oscillator.type = 'sine'
+
+      gainNode.gain.setValueAtTime(0.12, ctx.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06)
+
+      oscillator.start(ctx.currentTime)
+      oscillator.stop(ctx.currentTime + 0.06)
+    } catch (e) {
+      console.log('Audio not supported')
+    }
+  }
+
+  // Confirm key sound - satisfying confirmation
+  function playConfirmSound() {
+    if (isMuted.value) return
+
+    triggerHaptic('medium')
+
+    try {
+      const ctx = getAudioContext()
+      const oscillator = ctx.createOscillator()
+      const oscillator2 = ctx.createOscillator()
+      const gainNode = ctx.createGain()
+      const gainNode2 = ctx.createGain()
+
+      oscillator.connect(gainNode)
+      gainNode.connect(ctx.destination)
+      oscillator2.connect(gainNode2)
+      gainNode2.connect(ctx.destination)
+
+      // Two-tone confirmation beep
+      oscillator.frequency.setValueAtTime(523.25, ctx.currentTime) // C5
+      oscillator.type = 'sine'
+      gainNode.gain.setValueAtTime(0.15, ctx.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1)
+
+      oscillator2.frequency.setValueAtTime(783.99, ctx.currentTime + 0.08) // G5
+      oscillator2.type = 'sine'
+      gainNode2.gain.setValueAtTime(0, ctx.currentTime)
+      gainNode2.gain.setValueAtTime(0.15, ctx.currentTime + 0.08)
+      gainNode2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.18)
+
+      oscillator.start(ctx.currentTime)
+      oscillator.stop(ctx.currentTime + 0.1)
+      oscillator2.start(ctx.currentTime + 0.08)
+      oscillator2.stop(ctx.currentTime + 0.18)
+    } catch (e) {
+      console.log('Audio not supported')
+    }
+  }
+
+  // Haptic feedback helper
+  function triggerHaptic(intensity = 'light') {
+    try {
+      if ('vibrate' in navigator) {
+        const duration = intensity === 'light' ? 10 : intensity === 'medium' ? 20 : 30
+        navigator.vibrate(duration)
+      }
+    } catch (e) {
+      // Vibration not supported
+    }
+  }
+
   function playStickerSound() {
     if (isMuted.value) return
     try {
@@ -290,10 +399,14 @@ export function useSound() {
     playVictorySound,
     playApplauseSound,
     playClickSound,
+    playKeySound,
+    playDeleteSound,
+    playConfirmSound,
     playStickerSound,
     playCoinSound,
     playPurchaseSound,
     playUnlockSound,
+    triggerHaptic,
     toggleMute
   }
 }

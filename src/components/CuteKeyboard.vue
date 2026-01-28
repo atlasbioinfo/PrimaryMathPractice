@@ -49,6 +49,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useUserStore } from '../stores/user'
+import { useSound } from '../composables/useSound'
 
 const props = defineProps({
   modelValue: {
@@ -68,6 +69,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'confirm'])
 
 const userStore = useUserStore()
+const { playKeySound, playDeleteSound, playConfirmSound } = useSound()
 const theme = computed(() => userStore.theme.name)
 
 const displayValue = computed(() => {
@@ -83,6 +85,7 @@ function pressKey(num) {
   const currentValue = displayValue.value
   if (currentValue.length >= props.maxLength) return
 
+  playKeySound()
   const newValue = currentValue + String(num)
   emit('update:modelValue', Number(newValue))
 }
@@ -91,16 +94,19 @@ function deleteKey() {
   const currentValue = displayValue.value
   if (currentValue.length === 0) return
 
+  playDeleteSound()
   const newValue = currentValue.slice(0, -1)
   emit('update:modelValue', newValue === '' ? null : Number(newValue))
 }
 
 function clearAll() {
+  playDeleteSound()
   emit('update:modelValue', null)
 }
 
 function confirm() {
   if (!canConfirm.value) return
+  playConfirmSound()
   emit('confirm')
 }
 </script>
@@ -145,7 +151,7 @@ function confirm() {
   font-weight: 700;
   color: #FF69B4;
   text-align: center;
-  font-family: 'Comic Sans MS', cursive, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   letter-spacing: 4px;
 }
 
@@ -155,7 +161,6 @@ function confirm() {
 
 .display-value.empty {
   color: #ccc;
-  font-size: 24px;
 }
 
 .clear-all-btn {
@@ -203,7 +208,7 @@ function confirm() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Comic Sans MS', cursive, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   position: relative;
   overflow: hidden;
 }
@@ -342,10 +347,6 @@ function confirm() {
   .display-value {
     font-size: 28px;
     letter-spacing: 3px;
-  }
-
-  .display-value.empty {
-    font-size: 20px;
   }
 
   .clear-all-btn {
