@@ -60,7 +60,7 @@
         <span class="footer-text">{{ t.share?.joinMe || 'Join me on MathHero!' }}</span>
         <span class="footer-url">atlasbioinfo.github.io/MathHero</span>
       </div>
-      <img src="/MathHero/qr-code.png" alt="QR Code" class="qr-code" />
+      <img :src="qrCodeImg" alt="QR Code" class="qr-code" />
     </div>
   </div>
 </template>
@@ -71,6 +71,7 @@ import { useUserStore } from '../stores/user'
 import { useStatsStore } from '../stores/stats'
 import { useStickersStore } from '../stores/stickers'
 import { useLocaleStore } from '../stores/locale'
+import qrCodeImg from '../assets/qr-code.png'
 
 const userStore = useUserStore()
 const statsStore = useStatsStore()
