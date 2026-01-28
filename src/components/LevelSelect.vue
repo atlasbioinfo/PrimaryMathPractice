@@ -13,16 +13,24 @@
       <div style="width: 40px"></div>
     </div>
 
-    <div class="level-cards">
+    <div class="level-cards" role="listbox" aria-label="Level selection">
       <div
         v-for="level in 6"
         :key="level"
+        :ref="(el) => setCardRef(el, level - 1)"
         class="level-card"
         :class="{
           locked: level > progress.unlockedLevel,
-          completed: progress.completedLevels.includes(level)
+          completed: progress.completedLevels.includes(level),
+          focused: focusedIndex === level - 1
         }"
+        role="option"
+        :aria-selected="focusedIndex === level - 1"
+        :aria-disabled="level > progress.unlockedLevel"
+        tabindex="0"
         @click="selectLevel(level)"
+        @keydown="handleKeydown"
+        @focus="focusedIndex = level - 1"
       >
         <div v-if="level > progress.unlockedLevel" class="lock-overlay" :class="{ purchasable: levelUnlockPrices[level] }">
           <span class="lock-icon">🔒</span>
@@ -81,7 +89,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { NButton, NModal, useMessage } from 'naive-ui'
 import { useUserStore } from '../stores/user'
 import { useProgressStore } from '../stores/progress'
@@ -115,6 +123,10 @@ const progress = computed(() => progressStore.getOperationProgress(props.operati
 
 const showUnlockDialog = ref(false)
 const levelToUnlock = ref(null)
+
+// Keyboard navigation
+const focusedIndex = ref(0)
+const cardRefs = ref([])
 
 function getOperationName() {
   return t.value.operations[props.operation]
@@ -173,6 +185,49 @@ function purchaseUnlock() {
     levelToUnlock.value = null
   }
 }
+
+// Keyboard navigation
+const totalLevels = 6
+
+function handleKeydown(event) {
+  const { key } = event
+
+  if (key === 'ArrowDown' || key === 'ArrowRight') {
+    event.preventDefault()
+    focusedIndex.value = (focusedIndex.value + 1) % totalLevels
+    focusCard(focusedIndex.value)
+  } else if (key === 'ArrowUp' || key === 'ArrowLeft') {
+    event.preventDefault()
+    focusedIndex.value = (focusedIndex.value - 1 + totalLevels) % totalLevels
+    focusCard(focusedIndex.value)
+  } else if (key === 'Enter' || key === ' ') {
+    event.preventDefault()
+    selectLevel(focusedIndex.value + 1)
+  } else if (key === 'Escape') {
+    emit('back')
+  }
+}
+
+function focusCard(index) {
+  nextTick(() => {
+    const card = cardRefs.value[index]
+    if (card) {
+      card.focus()
+    }
+  })
+}
+
+function setCardRef(el, index) {
+  if (el) {
+    cardRefs.value[index] = el
+  }
+}
+
+onMounted(() => {
+  nextTick(() => {
+    focusCard(0)
+  })
+})
 </script>
 
 <style scoped>
@@ -221,10 +276,18 @@ function purchaseUnlock() {
   overflow: hidden;
 }
 
-.level-card:hover:not(.locked) {
+.level-card:hover:not(.locked),
+.level-card:focus:not(.locked),
+.level-card.focused:not(.locked) {
   transform: translateY(-8px);
   box-shadow: 0 12px 35px rgba(0,0,0,0.15);
   border-color: var(--primary-color, #FF69B4);
+  outline: none;
+}
+
+.level-card:focus-visible {
+  outline: 3px solid var(--accent-color, #FF1493);
+  outline-offset: 2px;
 }
 
 .level-card.locked {

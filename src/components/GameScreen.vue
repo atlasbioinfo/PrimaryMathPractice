@@ -1,6 +1,6 @@
 <template>
-  <div class="game-screen">
-    <div class="game-header">
+  <div class="game-screen" role="main" aria-label="Math practice game">
+    <div class="game-header" role="banner">
       <button class="quit-btn" @click="showQuitConfirm = true" :title="t.game.quit">✕</button>
       <div class="level-badge">{{ operationInfo.icon }} {{ levelName }}</div>
       <div class="timer-container">
@@ -30,9 +30,9 @@
       class="game-progress"
     />
 
-    <div class="question-container">
-      <div class="question-card">
-        <div class="question-number">{{ localeStore.translate('game.question', { n: gameStore.currentQuestionIndex + 1 }) }}</div>
+    <div class="question-container" role="region" aria-label="Question area">
+      <div class="question-card" role="article">
+        <div class="question-number" aria-live="polite">{{ localeStore.translate('game.question', { n: gameStore.currentQuestionIndex + 1 }) }}</div>
 
         <!-- Regular number question -->
         <div v-if="!isFraction" class="question-content">
@@ -82,14 +82,20 @@
 
     </div>
 
-    <div class="score-display">
+    <div class="score-display" role="status" aria-live="polite">
       {{ t.game.correct }}: <span class="correct-count">{{ gameStore.correctCount }}</span> |
       {{ t.game.wrong }}: <span class="wrong-count">{{ gameStore.wrongCount }}</span>
     </div>
 
     <!-- Feedback Animation -->
     <transition name="feedback">
-      <div v-if="showFeedback" class="feedback-overlay" :class="feedbackType">
+      <div
+        v-if="showFeedback"
+        class="feedback-overlay"
+        :class="feedbackType"
+        role="alert"
+        aria-live="assertive"
+      >
         <div class="feedback-content">
           {{ feedbackType === 'correct' ? t.game.correctFeedback : t.game.wrongFeedback }}
         </div>

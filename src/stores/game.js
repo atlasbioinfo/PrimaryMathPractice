@@ -1,5 +1,35 @@
+/**
+ * Game store for managing active game session state
+ * @module stores/game
+ */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+
+/**
+ * @typedef {import('../config/levels').Question} Question
+ */
+
+/**
+ * @typedef {Object} AnswerRecord
+ * @property {Question} question - The question that was answered
+ * @property {*} userAnswer - The user's answer
+ * @property {*} correctAnswer - The correct answer
+ * @property {boolean} isCorrect - Whether the answer was correct
+ * @property {boolean} retried - Whether this was a retry attempt
+ */
+
+/**
+ * @typedef {Object} GameState
+ * @property {string|null} currentOperation - Current operation type
+ * @property {number|null} currentLevel - Current level number
+ * @property {Question[]} questions - Array of questions for this game
+ * @property {number} currentQuestionIndex - Index of current question
+ * @property {AnswerRecord[]} answers - Array of answer records
+ * @property {number} timeLeft - Seconds remaining
+ * @property {number|null} startTime - Timestamp when game started
+ * @property {boolean} isPlaying - Whether game is in progress
+ * @property {boolean} isPaused - Whether game is paused
+ */
 
 export const useGameStore = defineStore('game', () => {
   const currentOperation = ref(null)
@@ -38,6 +68,12 @@ export const useGameStore = defineStore('game', () => {
     return 180 - timeLeft.value
   })
 
+  /**
+   * Start a new game session
+   * @param {string} operation - Operation type
+   * @param {number} level - Level number
+   * @param {Question[]} generatedQuestions - Questions for this game
+   */
   function startGame(operation, level, generatedQuestions) {
     currentOperation.value = operation
     currentLevel.value = level
@@ -50,6 +86,13 @@ export const useGameStore = defineStore('game', () => {
     isPaused.value = false
   }
 
+  /**
+   * Submit an answer for the current question
+   * @param {*} userAnswer - The user's answer
+   * @param {*} correctAnswer - The correct answer
+   * @param {boolean} [retried=false] - Whether this is a retry attempt
+   * @returns {boolean} Whether the answer was correct
+   */
   function submitAnswer(userAnswer, correctAnswer, retried = false) {
     const isCorrect = userAnswer === correctAnswer
     answers.value.push({

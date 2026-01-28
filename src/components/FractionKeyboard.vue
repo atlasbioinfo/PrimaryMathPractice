@@ -1,32 +1,50 @@
 <template>
-  <div class="fraction-keyboard" :class="theme" tabindex="0" ref="keyboardRef" @keydown="handleKeydown">
+  <div
+    class="fraction-keyboard"
+    :class="theme"
+    tabindex="0"
+    ref="keyboardRef"
+    @keydown="handleKeydown"
+    role="application"
+    :aria-label="t.game?.fractionKeyboardHint || 'Fraction keyboard'"
+  >
     <!-- Fraction Display Area -->
-    <div class="fraction-display">
+    <div class="fraction-display" role="group" aria-label="Fraction input">
       <div
         class="fraction-part"
         :class="{ active: activeField === 'numerator', filled: modelValue.numerator !== null }"
         @click="activeField = 'numerator'"
+        role="button"
+        tabindex="-1"
+        :aria-label="`Numerator: ${modelValue.numerator !== null ? modelValue.numerator : 'empty'}`"
+        :aria-pressed="activeField === 'numerator'"
       >
         {{ modelValue.numerator !== null ? modelValue.numerator : '?' }}
       </div>
-      <div class="fraction-line"></div>
+      <div class="fraction-line" role="presentation" aria-hidden="true"></div>
       <div
         class="fraction-part"
         :class="{ active: activeField === 'denominator', filled: modelValue.denominator !== null }"
         @click="activeField = 'denominator'"
+        role="button"
+        tabindex="-1"
+        :aria-label="`Denominator: ${modelValue.denominator !== null ? modelValue.denominator : 'empty'}`"
+        :aria-pressed="activeField === 'denominator'"
       >
         {{ modelValue.denominator !== null ? modelValue.denominator : '?' }}
       </div>
     </div>
 
     <!-- Field Toggle Buttons -->
-    <div class="field-toggle">
+    <div class="field-toggle" role="tablist" aria-label="Select fraction part">
       <button
         class="toggle-btn"
         :class="{ active: activeField === 'numerator' }"
         @click="activeField = 'numerator'"
         type="button"
         tabindex="-1"
+        role="tab"
+        :aria-selected="activeField === 'numerator'"
       >
         {{ numeratorLabel }}
       </button>
@@ -36,6 +54,8 @@
         @click="activeField = 'denominator'"
         type="button"
         tabindex="-1"
+        role="tab"
+        :aria-selected="activeField === 'denominator'"
       >
         {{ denominatorLabel }}
       </button>
@@ -89,6 +109,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '../stores/user'
 import { useLocaleStore } from '../stores/locale'
 import { useSound } from '../composables/useSound'
+import { throttle } from '../utils/debounceThrottle'
 
 const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -169,10 +190,15 @@ function clearField() {
   })
 }
 
-function confirm() {
-  if (!canConfirm.value) return
+// Throttled confirm to prevent double submissions
+const throttledConfirm = throttle(() => {
   playConfirmSound()
   emit('confirm')
+}, 500, { trailing: false })
+
+function confirm() {
+  if (!canConfirm.value) return
+  throttledConfirm()
 }
 
 function handleKeydown(e) {

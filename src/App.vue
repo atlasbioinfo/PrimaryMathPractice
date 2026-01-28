@@ -33,12 +33,28 @@
               v-else-if="currentScreen === 'home'"
               @startGame="goToOperationSelect"
               @openShop="goToShop"
+              @openDailyChallenge="goToDailyChallenge"
+              @openWrongQuestions="goToWrongQuestions"
             />
 
             <!-- Shop Screen -->
             <ShopScreen
               v-else-if="currentScreen === 'shop'"
               @back="goHome"
+            />
+
+            <!-- Daily Challenge Screen -->
+            <DailyChallengeScreen
+              v-else-if="currentScreen === 'dailyChallenge'"
+              @back="goHome"
+              @start="startDailyChallenge"
+            />
+
+            <!-- Wrong Questions Screen -->
+            <WrongQuestionsScreen
+              v-else-if="currentScreen === 'wrongQuestions'"
+              @back="goHome"
+              @practice="startWrongQuestionsPractice"
             />
 
             <!-- Operation Selection -->
@@ -82,7 +98,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import {
   NConfigProvider,
   NMessageProvider,
@@ -95,6 +111,7 @@ import { useTheme } from './composables/useTheme'
 import { generateQuestions } from './config/levels'
 import { backgroundThemes } from './config/shop'
 
+// Eagerly loaded components (needed immediately)
 import FloatingDecorations from './components/FloatingDecorations.vue'
 import UserMenu from './components/UserMenu.vue'
 import GenderSelect from './components/GenderSelect.vue'
@@ -102,15 +119,27 @@ import HomeScreen from './components/HomeScreen.vue'
 import OperationSelect from './components/OperationSelect.vue'
 import LevelSelect from './components/LevelSelect.vue'
 import GameScreen from './components/GameScreen.vue'
-import ResultScreen from './components/ResultScreen.vue'
-import ShopScreen from './components/ShopScreen.vue'
 import CoinDisplay from './components/CoinDisplay.vue'
 import AppFooter from './components/AppFooter.vue'
+
+// Lazy loaded components (loaded on demand)
+const ResultScreen = defineAsyncComponent(() =>
+  import('./components/ResultScreen.vue')
+)
+const ShopScreen = defineAsyncComponent(() =>
+  import('./components/ShopScreen.vue')
+)
+const DailyChallengeScreen = defineAsyncComponent(() =>
+  import('./components/DailyChallengeScreen.vue')
+)
+const WrongQuestionsScreen = defineAsyncComponent(() =>
+  import('./components/WrongQuestionsScreen.vue')
+)
 
 const userStore = useUserStore()
 const gameStore = useGameStore()
 const coinsStore = useCoinsStore()
-const { themeOverrides, applyTheme } = useTheme()
+const { themeOverrides, applyTheme, initDarkMode } = useTheme()
 
 const currentScreen = ref('home')
 const selectedOperation = ref(null)
@@ -140,6 +169,40 @@ function goHome() {
 
 function goToShop() {
   currentScreen.value = 'shop'
+}
+
+function goToDailyChallenge() {
+  currentScreen.value = 'dailyChallenge'
+}
+
+function goToWrongQuestions() {
+  currentScreen.value = 'wrongQuestions'
+}
+
+function startDailyChallenge(config) {
+  // Import daily challenge store dynamically
+  import('./stores/dailyChallenge').then(({ useDailyChallengeStore }) => {
+    const challengeStore = useDailyChallengeStore()
+    const questions = challengeStore.generateTodayQuestions()
+    selectedOperation.value = config.operation
+    selectedLevel.value = config.level
+    gameStore.startGame(config.operation, config.level, questions)
+    currentScreen.value = 'playing'
+  })
+}
+
+function startWrongQuestionsPractice(wrongQuestions) {
+  // Convert wrong questions to a format the game can use
+  if (wrongQuestions.length === 0) return
+
+  // Use the first question's operation and level
+  const firstQ = wrongQuestions[0]
+  selectedOperation.value = firstQ.operation
+  selectedLevel.value = firstQ.level
+
+  const questions = wrongQuestions.map(wq => wq.question)
+  gameStore.startGame(firstQ.operation, firstQ.level, questions)
+  currentScreen.value = 'playing'
 }
 
 function goToOperationSelect() {
@@ -181,6 +244,7 @@ function nextLevel() {
 
 onMounted(() => {
   applyTheme()
+  initDarkMode()
 })
 </script>
 

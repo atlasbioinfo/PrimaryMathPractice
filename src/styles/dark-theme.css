@@ -1,0 +1,363 @@
+/**
+ * Dark theme styles for MathHero
+ * Applied when .dark-mode class is on the document element
+ */
+
+:root.dark-mode {
+  /* Override theme colors for dark mode */
+  --dark-bg-primary: #1a1a2e;
+  --dark-bg-secondary: #16213e;
+  --dark-bg-tertiary: #0f3460;
+  --dark-text-primary: #ffffff;
+  --dark-text-secondary: #b8b8d0;
+  --dark-text-muted: #8888a0;
+  --dark-border: #2a2a4a;
+  --dark-card-bg: #1e1e3a;
+  --dark-input-bg: #252545;
+  --dark-shadow: rgba(0, 0, 0, 0.4);
+}
+
+/* Global dark mode styles */
+.dark-mode {
+  background-color: var(--dark-bg-primary) !important;
+  color: var(--dark-text-primary);
+}
+
+.dark-mode body {
+  background-color: var(--dark-bg-primary);
+  color: var(--dark-text-primary);
+}
+
+/* Cards and containers */
+.dark-mode .card,
+.dark-mode .panel,
+.dark-mode .menu-item,
+.dark-mode .modal-content,
+.dark-mode .dropdown,
+.dark-mode .cute-dropdown,
+.dark-mode .settings-modal {
+  background-color: var(--dark-card-bg) !important;
+  border-color: var(--dark-border) !important;
+}
+
+/* Home screen */
+.dark-mode .home-screen {
+  background: linear-gradient(135deg, var(--dark-bg-primary), var(--dark-bg-secondary)) !important;
+}
+
+.dark-mode .stat-card,
+.dark-mode .action-card,
+.dark-mode .challenge-card,
+.dark-mode .wrong-questions-card {
+  background: var(--dark-card-bg) !important;
+  box-shadow: 0 4px 20px var(--dark-shadow) !important;
+}
+
+.dark-mode .stat-value,
+.dark-mode .stat-label,
+.dark-mode .card-title {
+  color: var(--dark-text-primary) !important;
+}
+
+.dark-mode .card-desc,
+.dark-mode .card-subtitle {
+  color: var(--dark-text-secondary) !important;
+}
+
+/* Text colors */
+.dark-mode h1,
+.dark-mode h2,
+.dark-mode h3,
+.dark-mode h4,
+.dark-mode h5,
+.dark-mode h6 {
+  color: var(--dark-text-primary) !important;
+}
+
+.dark-mode p,
+.dark-mode span,
+.dark-mode label {
+  color: var(--dark-text-secondary);
+}
+
+.dark-mode .text-muted,
+.dark-mode .desc,
+.dark-mode .subtitle {
+  color: var(--dark-text-muted) !important;
+}
+
+/* Buttons */
+.dark-mode .btn-secondary,
+.dark-mode .back-btn {
+  background-color: var(--dark-bg-tertiary) !important;
+  color: var(--dark-text-primary) !important;
+  border-color: var(--dark-border) !important;
+}
+
+.dark-mode .btn-secondary:hover,
+.dark-mode .back-btn:hover {
+  background-color: var(--dark-border) !important;
+}
+
+/* Input fields */
+.dark-mode input,
+.dark-mode textarea,
+.dark-mode select {
+  background-color: var(--dark-input-bg) !important;
+  color: var(--dark-text-primary) !important;
+  border-color: var(--dark-border) !important;
+}
+
+.dark-mode input::placeholder,
+.dark-mode textarea::placeholder {
+  color: var(--dark-text-muted) !important;
+}
+
+/* Keyboard */
+.dark-mode .keyboard,
+.dark-mode .cute-keyboard,
+.dark-mode .fraction-keyboard {
+  background: linear-gradient(135deg, var(--dark-bg-secondary), var(--dark-bg-primary)) !important;
+  border-color: var(--dark-border) !important;
+}
+
+.dark-mode .key-btn {
+  background: var(--dark-card-bg) !important;
+  color: var(--dark-text-primary) !important;
+  border-color: var(--dark-border) !important;
+  box-shadow: 0 4px 8px var(--dark-shadow) !important;
+}
+
+.dark-mode .key-btn:hover,
+.dark-mode .key-btn:active {
+  background: var(--dark-bg-tertiary) !important;
+}
+
+/* Game screen */
+.dark-mode .game-screen {
+  background: linear-gradient(135deg, var(--dark-bg-primary), var(--dark-bg-secondary)) !important;
+}
+
+.dark-mode .question-card,
+.dark-mode .answer-display {
+  background: var(--dark-card-bg) !important;
+  border-color: var(--dark-border) !important;
+  box-shadow: 0 8px 30px var(--dark-shadow) !important;
+}
+
+.dark-mode .question-text {
+  color: var(--dark-text-primary) !important;
+}
+
+/* Result screen */
+.dark-mode .result-screen {
+  background: linear-gradient(135deg, var(--dark-bg-primary), var(--dark-bg-secondary)) !important;
+}
+
+.dark-mode .result-card {
+  background: var(--dark-card-bg) !important;
+  box-shadow: 0 8px 30px var(--dark-shadow) !important;
+}
+
+/* Level select */
+.dark-mode .level-select,
+.dark-mode .operation-select {
+  background: linear-gradient(135deg, var(--dark-bg-primary), var(--dark-bg-secondary)) !important;
+}
+
+.dark-mode .level-card,
+.dark-mode .operation-card {
+  background: var(--dark-card-bg) !important;
+  border-color: var(--dark-border) !important;
+  box-shadow: 0 4px 15px var(--dark-shadow) !important;
+}
+
+.dark-mode .level-card:hover,
+.dark-mode .operation-card:hover {
+  background: var(--dark-bg-tertiary) !important;
+}
+
+.dark-mode .level-name,
+.dark-mode .operation-name {
+  color: var(--dark-text-primary) !important;
+}
+
+.dark-mode .level-desc,
+.dark-mode .operation-desc {
+  color: var(--dark-text-secondary) !important;
+}
+
+/* Shop screen */
+.dark-mode .shop-screen {
+  background: linear-gradient(135deg, var(--dark-bg-primary), var(--dark-bg-secondary)) !important;
+}
+
+.dark-mode .shop-tab {
+  background: var(--dark-card-bg) !important;
+  color: var(--dark-text-secondary) !important;
+}
+
+.dark-mode .shop-tab.active {
+  background: var(--dark-bg-tertiary) !important;
+  color: var(--dark-text-primary) !important;
+}
+
+.dark-mode .shop-item {
+  background: var(--dark-card-bg) !important;
+  border-color: var(--dark-border) !important;
+}
+
+/* Stats panel */
+.dark-mode .stats-panel {
+  background: var(--dark-card-bg) !important;
+}
+
+.dark-mode .stats-section {
+  border-color: var(--dark-border) !important;
+}
+
+/* User menu */
+.dark-mode .user-menu .menu-item {
+  background: var(--dark-card-bg) !important;
+  border-color: var(--dark-border) !important;
+}
+
+.dark-mode .user-menu .menu-text,
+.dark-mode .user-menu .user-name {
+  color: var(--dark-text-primary) !important;
+}
+
+.dark-mode .dropdown-header {
+  background: linear-gradient(135deg, var(--dark-bg-secondary), var(--dark-bg-tertiary)) !important;
+}
+
+.dark-mode .dropdown-item {
+  color: var(--dark-text-secondary) !important;
+}
+
+.dark-mode .dropdown-item:hover {
+  background: var(--dark-bg-tertiary) !important;
+  color: var(--dark-text-primary) !important;
+}
+
+.dark-mode .dropdown-divider {
+  background: linear-gradient(90deg, transparent, var(--dark-border), transparent) !important;
+}
+
+/* Modal overlay */
+.dark-mode .modal-overlay,
+.dark-mode .settings-modal-overlay {
+  background: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Settings */
+.dark-mode .settings-tabs {
+  border-color: var(--dark-border) !important;
+}
+
+.dark-mode .tab-btn {
+  color: var(--dark-text-muted) !important;
+}
+
+.dark-mode .tab-btn:hover {
+  background: var(--dark-bg-tertiary) !important;
+  color: var(--dark-text-secondary) !important;
+}
+
+.dark-mode .tab-btn.active {
+  background: var(--dark-bg-tertiary) !important;
+  color: var(--primary-color) !important;
+}
+
+.dark-mode .setting-group {
+  border-color: var(--dark-border) !important;
+}
+
+.dark-mode .setting-label {
+  color: var(--dark-text-primary) !important;
+}
+
+.dark-mode .setting-desc {
+  color: var(--dark-text-muted) !important;
+}
+
+.dark-mode .toggle-switch {
+  background: var(--dark-bg-tertiary) !important;
+}
+
+.dark-mode .size-btn {
+  background: var(--dark-bg-tertiary) !important;
+  border-color: transparent !important;
+}
+
+.dark-mode .size-btn:hover {
+  background: var(--dark-border) !important;
+}
+
+.dark-mode .size-preview {
+  color: var(--dark-text-primary) !important;
+}
+
+.dark-mode .size-label {
+  color: var(--dark-text-muted) !important;
+}
+
+.dark-mode .reset-btn {
+  background: var(--dark-bg-tertiary) !important;
+  color: var(--dark-text-secondary) !important;
+}
+
+.dark-mode .reset-btn:hover {
+  background: var(--dark-border) !important;
+  color: var(--dark-text-primary) !important;
+}
+
+.dark-mode .close-btn {
+  background: var(--dark-bg-tertiary) !important;
+  color: var(--dark-text-secondary) !important;
+}
+
+.dark-mode .close-btn:hover {
+  background: var(--dark-border) !important;
+  color: var(--dark-text-primary) !important;
+}
+
+/* Sticker wall */
+.dark-mode .sticker-wall {
+  background: linear-gradient(135deg, var(--dark-bg-primary), var(--dark-bg-secondary)) !important;
+}
+
+.dark-mode .sticker-card {
+  background: var(--dark-card-bg) !important;
+  border-color: var(--dark-border) !important;
+}
+
+/* Footer */
+.dark-mode .footer {
+  background: var(--dark-bg-secondary) !important;
+  border-color: var(--dark-border) !important;
+}
+
+.dark-mode .footer p,
+.dark-mode .footer a {
+  color: var(--dark-text-muted) !important;
+}
+
+/* Scrollbar */
+.dark-mode ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark-mode ::-webkit-scrollbar-track {
+  background: var(--dark-bg-secondary);
+}
+
+.dark-mode ::-webkit-scrollbar-thumb {
+  background: var(--dark-border);
+  border-radius: 4px;
+}
+
+.dark-mode ::-webkit-scrollbar-thumb:hover {
+  background: var(--dark-bg-tertiary);
+}

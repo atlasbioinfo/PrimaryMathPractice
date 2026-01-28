@@ -387,6 +387,94 @@ export default {
     mathMasterDesc: '所有运算所有关卡满分！'
   },
 
+  // 无障碍
+  accessibility: {
+    title: '无障碍设置',
+    fontSize: '字体大小',
+    reduceMotion: '减少动画',
+    reduceMotionDesc: '禁用动画效果',
+    highContrast: '高对比度',
+    highContrastDesc: '增强视觉对比',
+    reset: '恢复默认'
+  },
+
+  // 音效设置
+  audio: {
+    title: '音效设置',
+    soundEffects: '音效',
+    soundEffectsDesc: '游戏音效开关',
+    hapticFeedback: '触感反馈',
+    hapticFeedbackDesc: '按键振动反馈'
+  },
+
+  // 深色模式
+  darkMode: {
+    title: '显示设置',
+    darkMode: '深色模式',
+    darkModeDesc: '切换深色主题',
+    auto: '跟随系统',
+    autoDesc: '自动跟随系统设置'
+  },
+
+  // 每日挑战
+  dailyChallenge: {
+    title: '每日挑战',
+    completed: '今日已完成！',
+    tapToPlay: '点击开始挑战！',
+    streak: '连续',
+    currentStreak: '当前连续',
+    bestStreak: '最佳连续',
+    total: '总计',
+    rewards: '奖励预览',
+    streakBonus: '连续奖励',
+    perfectBonus: '满分奖励',
+    start: '开始挑战'
+  },
+
+  // 错题回顾
+  wrongQuestions: {
+    title: '错题回顾',
+    empty: '太棒了！没有错题',
+    emptyDesc: '继续保持，你做得很好！',
+    count: '{count} 道错题',
+    practice: '开始练习',
+    clear: '清空错题',
+    clearConfirm: '确定清空所有错题吗？',
+    lastWrong: '上次答错',
+    wrongCount: '错误次数'
+  },
+
+  // 自定义难度
+  customDifficulty: {
+    title: '家长设置',
+    setPin: '设置家长密码',
+    setPinDesc: '设置4位数字密码以访问家长设置',
+    enterPin: '输入家长密码',
+    enterPinDesc: '请输入4位数字密码',
+    wrongPin: '密码错误',
+    invalidPin: '密码格式无效',
+    questionsPerRound: '每轮题目数',
+    showHints: '显示提示',
+    showHintsDesc: '答错时显示正确答案',
+    allowRetry: '允许重试',
+    allowRetryDesc: '答错后可以重新作答',
+    customRanges: '自定义范围',
+    enabled: '启用',
+    min: '最小值',
+    max: '最大值',
+    resetSettings: '重置设置',
+    changePin: '修改密码'
+  },
+
+  // 成绩报告
+  report: {
+    title: '成绩报告',
+    generate: '生成PDF报告',
+    generating: '正在生成...',
+    success: '报告已生成！',
+    error: '生成报告失败'
+  },
+
   // 页脚
   footer: {
     privacy: '这是纯前端应用，所有数据保存在您的浏览器本地，不会上传任何信息。',

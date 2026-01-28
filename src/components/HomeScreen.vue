@@ -38,6 +38,12 @@
       <StatCard type="stickers" icon="🏅" :value="`${stickersStore.getEarnedCount()}/${stickersStore.getTotalCount()}`" :label="t.home.stickers" />
     </div>
 
+    <!-- Daily Challenge & Wrong Questions Row -->
+    <div class="challenge-row">
+      <DailyChallengeCard @play="$emit('openDailyChallenge')" />
+      <WrongQuestionsCard @review="$emit('openWrongQuestions')" />
+    </div>
+
     <!-- Main Action Button -->
     <button class="main-action-btn" :class="userStore.gender" @click="$emit('startGame')">
       <span class="btn-sparkle left">✨</span>
@@ -81,10 +87,14 @@
       <FeatureCard type="stats" icon="📊" :title="t.home.stats" :description="t.home.subtitle" @click="showStats = true" />
     </div>
 
-    <!-- Reset Button -->
-    <div class="reset-section">
-      <button class="reset-btn" @click="confirmReset">
-        <span class="reset-icon">🔄</span>
+    <!-- Action Buttons -->
+    <div class="action-section">
+      <button class="action-btn report-btn" @click="handleGenerateReport" :disabled="isGeneratingReport">
+        <span class="action-icon">📄</span>
+        {{ isGeneratingReport ? (t.report?.generating || 'Generating...') : (t.report?.generate || 'Generate Report') }}
+      </button>
+      <button class="action-btn reset-btn" @click="confirmReset">
+        <span class="action-icon">🔄</span>
         {{ t.home.reset }}
       </button>
     </div>
@@ -115,8 +125,11 @@ import StatsPanel from './StatsPanel.vue'
 import CoinDisplay from './CoinDisplay.vue'
 import StatCard from './StatCard.vue'
 import FeatureCard from './FeatureCard.vue'
+import DailyChallengeCard from './DailyChallengeCard.vue'
+import WrongQuestionsCard from './WrongQuestionsCard.vue'
+import { generateReport } from '../utils/reportGenerator'
 
-const emit = defineEmits(['startGame', 'openShop'])
+const emit = defineEmits(['startGame', 'openShop', 'openDailyChallenge', 'openWrongQuestions'])
 
 const userStore = useUserStore()
 const statsStore = useStatsStore()
@@ -130,6 +143,7 @@ const t = computed(() => localeStore.t)
 
 const showStickerWall = ref(false)
 const showStats = ref(false)
+const isGeneratingReport = ref(false)
 
 const decorations = [
   { top: '5%', left: '5%', fontSize: '20px', animationDelay: '0s' },
@@ -170,6 +184,30 @@ function confirmReset() {
 
 function openShop() {
   emit('openShop')
+}
+
+async function handleGenerateReport() {
+  if (isGeneratingReport.value) return
+
+  isGeneratingReport.value = true
+  try {
+    await generateReport({
+      username: userStore.username,
+      gender: userStore.gender,
+      stats: {
+        totalQuestions: statsStore.totalQuestions,
+        overallAccuracy: statsStore.overallAccuracy,
+        streakDays: statsStore.streakDays,
+        operationStats: statsStore.operationStats
+      },
+      progress: progressStore.progress,
+      t: t.value
+    })
+  } catch (error) {
+    console.error('Failed to generate report:', error)
+  } finally {
+    isGeneratingReport.value = false
+  }
 }
 </script>
 
@@ -350,6 +388,14 @@ function openShop() {
   font-size: 16px;
 }
 
+/* Challenge Row */
+.challenge-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
 /* Stats Row */
 .stats-row {
   display: grid;
@@ -486,12 +532,15 @@ function openShop() {
   filter: none;
 }
 
-/* Reset Section */
-.reset-section {
-  text-align: center;
+/* Action Section */
+.action-section {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.reset-btn {
+.action-btn {
   background: transparent;
   border: 2px dashed #ddd;
   border-radius: 12px;
@@ -505,13 +554,24 @@ function openShop() {
   gap: 8px;
 }
 
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.report-btn:hover:not(:disabled) {
+  border-color: var(--primary-color, #FF69B4);
+  color: var(--primary-color, #FF69B4);
+  background: var(--light-color, #FFF5F8);
+}
+
 .reset-btn:hover {
   border-color: #e74c3c;
   color: #e74c3c;
   background: #fff5f5;
 }
 
-.reset-icon {
+.action-icon {
   font-size: 16px;
 }
 
@@ -609,6 +669,13 @@ function openShop() {
 
   .badge-icon {
     font-size: 14px;
+  }
+
+  /* Challenge Row */
+  .challenge-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
   }
 
   /* Stats Row */

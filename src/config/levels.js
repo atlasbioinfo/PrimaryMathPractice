@@ -1,6 +1,54 @@
-// Level configuration for all operations
-// Names and descriptions use i18n keys
+/**
+ * Level configuration for all operations
+ * Names and descriptions use i18n keys
+ * @module config/levels
+ */
 
+/**
+ * @typedef {Object} NumberQuestion
+ * @property {number} num1 - First number
+ * @property {number} num2 - Second number
+ * @property {number} answer - Correct answer
+ */
+
+/**
+ * @typedef {Object} Fraction
+ * @property {number} numerator - Numerator of the fraction
+ * @property {number} denominator - Denominator of the fraction
+ */
+
+/**
+ * @typedef {Object} FractionQuestion
+ * @property {Fraction} fraction1 - First fraction
+ * @property {Fraction} [fraction2] - Second fraction (for addition/subtraction)
+ * @property {number} [integer] - Integer operand (for multiplication/division)
+ * @property {Fraction} answer - Correct answer as a fraction
+ * @property {string} operation - Operation symbol (+, −, ×, ÷)
+ */
+
+/**
+ * @typedef {NumberQuestion | FractionQuestion} Question
+ */
+
+/**
+ * @typedef {Object} LevelConfig
+ * @property {string} descKey - i18n key for level description
+ * @property {string} [type] - Type of operation for fractions
+ * @property {function(): Question} generator - Function to generate questions
+ */
+
+/**
+ * @typedef {Object} OperationConfig
+ * @property {string} symbol - Operation symbol for display
+ * @property {string} icon - Emoji icon for the operation
+ * @property {boolean} [isFraction] - Whether this operation uses fractions
+ * @property {Record<number, LevelConfig>} levels - Configuration for each level (1-6)
+ */
+
+/**
+ * Icons for each level
+ * @type {Record<number, string>}
+ */
 export const levelIcons = {
   1: '🍼',
   2: '🎒',
@@ -370,6 +418,19 @@ export const operationConfig = {
   }
 }
 
+/**
+ * Configuration for all math operations
+ * @type {Record<string, OperationConfig>}
+ */
+// operationConfig is exported above
+
+/**
+ * Generate a set of questions for a specific operation and level
+ * @param {string} operation - Operation type (addition, subtraction, multiplication, division, fraction)
+ * @param {number} level - Level number (1-6)
+ * @param {number} [count=10] - Number of questions to generate
+ * @returns {Question[]} Array of generated questions
+ */
 export function generateQuestions(operation, level, count = 10) {
   const generator = operationConfig[operation].levels[level].generator
   const questions = []

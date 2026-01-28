@@ -1,17 +1,32 @@
 <template>
-  <div class="cute-keyboard" :class="theme" tabindex="0" ref="keyboardRef" @keydown="handleKeydown">
+  <div
+    class="cute-keyboard"
+    :class="theme"
+    tabindex="0"
+    ref="keyboardRef"
+    @keydown="handleKeydown"
+    role="application"
+    :aria-label="t.game?.keyboardHint || 'Number keyboard'"
+  >
     <!-- Display Area -->
-    <div class="display-area">
-      <div class="display-value" :class="{ empty: !displayValue }">
+    <div class="display-area" role="status" aria-live="polite" aria-atomic="true">
+      <div class="display-value" :class="{ empty: !displayValue }" :aria-label="displayValue ? `Current value: ${displayValue}` : 'No value entered'">
         {{ displayValue || placeholder }}
       </div>
-      <button class="clear-btn" :class="{ visible: displayValue }" @click="clearAll" type="button" tabindex="-1">
+      <button
+        class="clear-btn"
+        :class="{ visible: displayValue }"
+        @click="clearAll"
+        type="button"
+        tabindex="-1"
+        aria-label="Clear all"
+      >
         C
       </button>
     </div>
 
     <!-- Number Keys -->
-    <div class="keyboard-grid">
+    <div class="keyboard-grid" role="grid" aria-label="Number pad">
       <button
         v-for="num in numbers"
         :key="num"
@@ -19,17 +34,33 @@
         @click="pressKey(num)"
         type="button"
         tabindex="-1"
+        :aria-label="`Number ${num}`"
+        role="gridcell"
       >
         {{ num }}
       </button>
 
       <!-- Delete Key -->
-      <button class="key action-key delete-key" @click="deleteKey" type="button" tabindex="-1">
+      <button
+        class="key action-key delete-key"
+        @click="deleteKey"
+        type="button"
+        tabindex="-1"
+        aria-label="Delete last digit"
+        role="gridcell"
+      >
         ⌫
       </button>
 
       <!-- Zero Key -->
-      <button class="key number-key" @click="pressKey(0)" type="button" tabindex="-1">
+      <button
+        class="key number-key"
+        @click="pressKey(0)"
+        type="button"
+        tabindex="-1"
+        aria-label="Number 0"
+        role="gridcell"
+      >
         0
       </button>
 
@@ -41,6 +72,9 @@
         @click="confirm"
         type="button"
         tabindex="-1"
+        :aria-label="canConfirm ? 'Submit answer' : 'Enter a number first'"
+        :aria-disabled="!canConfirm"
+        role="gridcell"
       >
         ✓
       </button>
@@ -58,6 +92,7 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '../stores/user'
 import { useLocaleStore } from '../stores/locale'
 import { useSound } from '../composables/useSound'
+import { throttle } from '../utils/debounceThrottle'
 
 const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -117,10 +152,15 @@ function clearAll() {
   emit('update:modelValue', null)
 }
 
-function confirm() {
-  if (!canConfirm.value) return
+// Throttled confirm to prevent double submissions
+const throttledConfirm = throttle(() => {
   playConfirmSound()
   emit('confirm')
+}, 500, { trailing: false })
+
+function confirm() {
+  if (!canConfirm.value) return
+  throttledConfirm()
 }
 
 function handleKeydown(e) {

@@ -10,12 +10,19 @@
       <div style="width: 40px"></div>
     </div>
 
-    <div class="operation-cards">
+    <div class="operation-cards" role="listbox" aria-label="Operation selection">
       <div
-        v-for="op in operations"
+        v-for="(op, index) in operations"
         :key="op.key"
+        :ref="(el) => setCardRef(el, index)"
         class="operation-card"
+        :class="{ focused: focusedIndex === index }"
+        role="option"
+        :aria-selected="focusedIndex === index"
+        tabindex="0"
         @click="selectOperation(op.key)"
+        @keydown="handleKeydown"
+        @focus="focusedIndex = index"
       >
         <div class="card-icon">{{ op.icon }}</div>
         <div class="card-content">
@@ -50,7 +57,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted, nextTick } from 'vue'
 import { NButton } from 'naive-ui'
 import { useProgressStore } from '../stores/progress'
 import { useStickersStore } from '../stores/stickers'
@@ -58,6 +65,10 @@ import { useLocaleStore } from '../stores/locale'
 import { useSound } from '../composables/useSound'
 
 const emit = defineEmits(['back', 'select'])
+
+// Keyboard navigation
+const focusedIndex = ref(0)
+const cardRefs = ref([])
 
 const progressStore = useProgressStore()
 const stickersStore = useStickersStore()
@@ -101,6 +112,49 @@ function selectOperation(opKey) {
   playClickSound()
   emit('select', opKey)
 }
+
+// Keyboard navigation
+function handleKeydown(event) {
+  const { key } = event
+  const totalItems = operations.length
+
+  if (key === 'ArrowDown' || key === 'ArrowRight') {
+    event.preventDefault()
+    focusedIndex.value = (focusedIndex.value + 1) % totalItems
+    focusCard(focusedIndex.value)
+  } else if (key === 'ArrowUp' || key === 'ArrowLeft') {
+    event.preventDefault()
+    focusedIndex.value = (focusedIndex.value - 1 + totalItems) % totalItems
+    focusCard(focusedIndex.value)
+  } else if (key === 'Enter' || key === ' ') {
+    event.preventDefault()
+    selectOperation(operations[focusedIndex.value].key)
+  } else if (key === 'Escape') {
+    emit('back')
+  }
+}
+
+function focusCard(index) {
+  nextTick(() => {
+    const card = cardRefs.value[index]
+    if (card) {
+      card.focus()
+    }
+  })
+}
+
+function setCardRef(el, index) {
+  if (el) {
+    cardRefs.value[index] = el
+  }
+}
+
+onMounted(() => {
+  // Focus first card on mount
+  nextTick(() => {
+    focusCard(0)
+  })
+})
 </script>
 
 <style scoped>
@@ -141,10 +195,18 @@ function selectOperation(opKey) {
   overflow: hidden;
 }
 
-.operation-card:hover {
+.operation-card:hover,
+.operation-card:focus,
+.operation-card.focused {
   transform: translateY(-8px);
   box-shadow: 0 12px 35px rgba(0,0,0,0.15);
   border-color: var(--primary-color, #FF69B4);
+  outline: none;
+}
+
+.operation-card:focus-visible {
+  outline: 3px solid var(--accent-color, #FF1493);
+  outline-offset: 2px;
 }
 
 .card-icon {

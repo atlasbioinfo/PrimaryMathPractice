@@ -1,4 +1,5 @@
-import { ref } from 'vue'
+import { computed } from 'vue'
+import { useAudioStore } from '../stores/audio'
 
 let audioContext = null
 
@@ -10,7 +11,11 @@ function getAudioContext() {
 }
 
 export function useSound() {
-  const isMuted = ref(false)
+  const audioStore = useAudioStore()
+
+  // Use computed to reactively check if sound is muted
+  const isMuted = computed(() => !audioStore.soundEnabled)
+  const isHapticEnabled = computed(() => audioStore.hapticEnabled)
 
   function playCorrectSound() {
     if (isMuted.value) return
@@ -249,6 +254,7 @@ export function useSound() {
 
   // Haptic feedback helper
   function triggerHaptic(intensity = 'light') {
+    if (!isHapticEnabled.value) return
     try {
       if ('vibrate' in navigator) {
         const duration = intensity === 'light' ? 10 : intensity === 'medium' ? 20 : 30
@@ -389,11 +395,12 @@ export function useSound() {
   }
 
   function toggleMute() {
-    isMuted.value = !isMuted.value
+    audioStore.toggleSound()
   }
 
   return {
     isMuted,
+    isHapticEnabled,
     playCorrectSound,
     playWrongSound,
     playVictorySound,

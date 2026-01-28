@@ -1,5 +1,28 @@
+/**
+ * Progress store for tracking level completion and unlocks
+ * @module stores/progress
+ */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+
+/**
+ * @typedef {Object} LevelScore
+ * @property {number} score - Best score achieved (0-10)
+ * @property {number} accuracy - Accuracy percentage
+ * @property {string} completedAt - ISO timestamp of best score
+ */
+
+/**
+ * @typedef {Object} OperationProgress
+ * @property {number} unlockedLevel - Highest unlocked level (1-6)
+ * @property {number[]} completedLevels - Array of completed level numbers
+ * @property {Record<number, LevelScore>} levelScores - Best scores by level
+ */
+
+/**
+ * @typedef {Object} ProgressState
+ * @property {Record<string, OperationProgress>} operations - Progress for each operation type
+ */
 
 export const useProgressStore = defineStore('progress', () => {
   const operations = ref({
@@ -10,10 +33,22 @@ export const useProgressStore = defineStore('progress', () => {
     fraction: { unlockedLevel: 1, completedLevels: [], levelScores: {} }
   })
 
+  /**
+   * Get progress for a specific operation type
+   * @param {string} operationType - Operation type (addition, subtraction, etc.)
+   * @returns {OperationProgress} Progress data for the operation
+   */
   function getOperationProgress(operationType) {
     return operations.value[operationType] || { unlockedLevel: 1, completedLevels: [], levelScores: {} }
   }
 
+  /**
+   * Record completion of a level
+   * @param {string} operationType - Operation type
+   * @param {number} level - Level number (1-6)
+   * @param {number} score - Score achieved (0-10)
+   * @param {number} accuracy - Accuracy percentage (0-100)
+   */
   function completeLevel(operationType, level, score, accuracy) {
     const op = operations.value[operationType]
     if (!op) return

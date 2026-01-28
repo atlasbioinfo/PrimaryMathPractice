@@ -2,11 +2,17 @@
 // Import all language packs
 import en from './en'
 import zh from './zh'
+import es from './es'
+import de from './de'
+import fr from './fr'
 
 // All available languages
 export const messages = {
   en,
-  zh
+  zh,
+  es,
+  de,
+  fr
 }
 
 // Default language
@@ -19,12 +25,9 @@ export const supportedLocales = Object.keys(messages)
 const localeDisplayNames = {
   en: 'English',
   zh: '中文',
-  // Add more languages here:
-  // ja: '日本語',
-  // ko: '한국어',
-  // es: 'Español',
-  // fr: 'Français',
-  // de: 'Deutsch',
+  es: 'Español',
+  de: 'Deutsch',
+  fr: 'Français'
 }
 
 /**
@@ -54,4 +57,13 @@ export function getAvailableLocales() {
     code,
     name: getLocaleDisplayName(code)
   }))
+}
+
+/**
+ * Get messages for a specific locale
+ * @param {string} locale - The locale code
+ * @returns {Object} The messages object for the locale
+ */
+export function getMessages(locale) {
+  return messages[locale] || messages[defaultLocale]
 }

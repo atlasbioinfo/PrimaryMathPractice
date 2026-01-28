@@ -66,12 +66,25 @@
 
         <div class="dropdown-divider"></div>
 
+        <!-- Settings -->
+        <div class="dropdown-item settings" @click.stop="openSettings">
+          <span class="item-icon">⚙️</span>
+          {{ t.accessibility?.title || 'Settings' }}
+        </div>
+
+        <div class="dropdown-divider"></div>
+
         <!-- Logout -->
         <div class="dropdown-item logout" @click.stop="handleLogout">
           <span class="item-icon">🚪</span>
           {{ t.userMenu.logout }}
         </div>
       </div>
+    </div>
+
+    <!-- Settings Button (always visible) -->
+    <div class="menu-item settings-btn" @click="openSettings">
+      <span class="menu-icon">⚙️</span>
     </div>
 
     <AddUserModal
@@ -97,6 +110,130 @@
       @close="showDeleteConfirm = false"
       @confirm="handleDeleteUser"
     />
+
+    <!-- Settings Modal -->
+    <Teleport to="body">
+      <div v-if="showSettingsModal" class="settings-modal-overlay" @click.self="closeSettingsModal">
+        <div class="settings-modal">
+          <button class="close-btn" @click="closeSettingsModal">×</button>
+
+          <!-- Tabs -->
+          <div class="settings-tabs">
+            <button
+              class="tab-btn"
+              :class="{ active: activeSettingsTab === 'audio' }"
+              @click="activeSettingsTab = 'audio'"
+            >
+              🔊 {{ t.audio?.title || 'Audio' }}
+            </button>
+            <button
+              class="tab-btn"
+              :class="{ active: activeSettingsTab === 'display' }"
+              @click="activeSettingsTab = 'display'"
+            >
+              🌓 {{ t.darkMode?.title || 'Display' }}
+            </button>
+            <button
+              class="tab-btn"
+              :class="{ active: activeSettingsTab === 'accessibility' }"
+              @click="activeSettingsTab = 'accessibility'"
+            >
+              ♿ {{ t.accessibility?.title || 'Accessibility' }}
+            </button>
+            <button
+              class="tab-btn parent-tab"
+              :class="{ active: activeSettingsTab === 'parent' }"
+              @click="openParentSettings"
+            >
+              🔐 {{ t.customDifficulty?.title || 'Parent' }}
+            </button>
+          </div>
+
+          <!-- Tab Content -->
+          <div class="settings-content">
+            <AudioSettings v-if="activeSettingsTab === 'audio'" />
+            <DarkModeSettings v-if="activeSettingsTab === 'display'" />
+            <AccessibilitySettings v-if="activeSettingsTab === 'accessibility'" />
+
+            <!-- Parent Settings (requires PIN) -->
+            <div v-if="activeSettingsTab === 'parent'" class="parent-settings">
+              <div v-if="parentSettingsUnlocked" class="parent-settings-content">
+                <h3 class="settings-title">{{ t.customDifficulty?.title || 'Parent Settings' }}</h3>
+
+                <!-- Questions per round -->
+                <div class="setting-group">
+                  <label class="setting-label">{{ t.customDifficulty?.questionsPerRound || 'Questions per Round' }}</label>
+                  <div class="range-input">
+                    <input
+                      type="range"
+                      min="5"
+                      max="20"
+                      :value="customDifficultyStore.questionsPerRound"
+                      @input="customDifficultyStore.updateSettings({ questionsPerRound: parseInt($event.target.value) })"
+                    />
+                    <span class="range-value">{{ customDifficultyStore.questionsPerRound }}</span>
+                  </div>
+                </div>
+
+                <!-- Show hints toggle -->
+                <div class="setting-group">
+                  <div class="setting-row">
+                    <div class="setting-info">
+                      <span class="setting-label">{{ t.customDifficulty?.showHints || 'Show Hints' }}</span>
+                      <span class="setting-desc">{{ t.customDifficulty?.showHintsDesc || 'Show correct answer' }}</span>
+                    </div>
+                    <button
+                      class="toggle-switch"
+                      :class="{ on: customDifficultyStore.showHints }"
+                      @click="customDifficultyStore.updateSettings({ showHints: !customDifficultyStore.showHints })"
+                    >
+                      <span class="toggle-thumb"></span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Allow retry toggle -->
+                <div class="setting-group">
+                  <div class="setting-row">
+                    <div class="setting-info">
+                      <span class="setting-label">{{ t.customDifficulty?.allowRetry || 'Allow Retry' }}</span>
+                      <span class="setting-desc">{{ t.customDifficulty?.allowRetryDesc || 'Allow retry after wrong' }}</span>
+                    </div>
+                    <button
+                      class="toggle-switch"
+                      :class="{ on: customDifficultyStore.allowRetry }"
+                      @click="customDifficultyStore.updateSettings({ allowRetry: !customDifficultyStore.allowRetry })"
+                    >
+                      <span class="toggle-thumb"></span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Reset button -->
+                <button class="reset-btn" @click="customDifficultyStore.reset()">
+                  {{ t.customDifficulty?.resetSettings || 'Reset Settings' }}
+                </button>
+              </div>
+              <div v-else class="parent-locked">
+                <div class="lock-icon">🔐</div>
+                <p>{{ t.customDifficulty?.enterPinDesc || 'Enter PIN to access' }}</p>
+                <button class="unlock-btn" @click="openParentSettings">
+                  {{ customDifficultyStore.isPinSet ? (t.customDifficulty?.enterPin || 'Enter PIN') : (t.customDifficulty?.setPin || 'Set PIN') }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Parent PIN Modal -->
+    <ParentPinModal
+      :show="showPinModal"
+      :is-setting-pin="isSettingPin"
+      @close="showPinModal = false"
+      @success="onPinSuccess"
+    />
   </div>
 </template>
 
@@ -109,9 +246,16 @@ import { useStickersStore } from '../stores/stickers'
 import { useProgressStore } from '../stores/progress'
 import { useCoinsStore } from '../stores/coins'
 import { useProfilesStore } from '../stores/profiles'
+import { useAudioStore } from '../stores/audio'
+import { useAccessibilityStore } from '../stores/accessibility'
 import { getLocaleDisplayName } from '../config/i18n'
 import AddUserModal from './AddUserModal.vue'
 import ConfirmModal from './ConfirmModal.vue'
+import AudioSettings from './AudioSettings.vue'
+import AccessibilitySettings from './AccessibilitySettings.vue'
+import DarkModeSettings from './DarkModeSettings.vue'
+import ParentPinModal from './ParentPinModal.vue'
+import { useCustomDifficultyStore } from '../stores/customDifficulty'
 
 const userStore = useUserStore()
 const localeStore = useLocaleStore()
@@ -120,13 +264,21 @@ const stickersStore = useStickersStore()
 const progressStore = useProgressStore()
 const coinsStore = useCoinsStore()
 const profilesStore = useProfilesStore()
+const audioStore = useAudioStore()
+const accessibilityStore = useAccessibilityStore()
+const customDifficultyStore = useCustomDifficultyStore()
 
 const baseUrl = import.meta.env.BASE_URL
 const showLanguageDropdown = ref(false)
 const showUserDropdown = ref(false)
 const showAddUserModal = ref(false)
 const showDeleteConfirm = ref(false)
+const showSettingsModal = ref(false)
+const activeSettingsTab = ref('audio')
 const userToDelete = ref(null)
+const showPinModal = ref(false)
+const isSettingPin = ref(false)
+const parentSettingsUnlocked = ref(false)
 
 
 const t = computed(() => localeStore.t)
@@ -147,6 +299,33 @@ function getLocaleName(locale) {
 function selectLocale(locale) {
   localeStore.setLocale(locale)
   showLanguageDropdown.value = false
+}
+
+function openSettings() {
+  showUserDropdown.value = false
+  showSettingsModal.value = true
+}
+
+function openParentSettings() {
+  if (customDifficultyStore.isPinSet) {
+    // Need to verify PIN first
+    isSettingPin.value = false
+    showPinModal.value = true
+  } else {
+    // No PIN set, prompt to set one
+    isSettingPin.value = true
+    showPinModal.value = true
+  }
+}
+
+function onPinSuccess() {
+  parentSettingsUnlocked.value = true
+  activeSettingsTab.value = 'parent'
+}
+
+function closeSettingsModal() {
+  showSettingsModal.value = false
+  parentSettingsUnlocked.value = false
 }
 
 function handleLogout() {
@@ -616,6 +795,311 @@ onUnmounted(() => {
   .user-avatar {
     width: 24px;
     height: 24px;
+  }
+}
+
+/* Settings Button */
+.settings-btn {
+  padding: 8px 12px !important;
+}
+
+.settings-btn:hover {
+  background: var(--light-color, #FFF5F8);
+}
+
+/* Settings Modal */
+.settings-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.settings-modal {
+  background: white;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 400px;
+  max-height: 80vh;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settings-modal .close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #f5f5f5;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  z-index: 10;
+  transition: all 0.2s;
+}
+
+.settings-modal .close-btn:hover {
+  background: #eee;
+  color: #333;
+}
+
+.settings-tabs {
+  display: flex;
+  border-bottom: 2px solid #eee;
+  padding: 16px 16px 0;
+  gap: 8px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 12px 12px 0 0;
+}
+
+.tab-btn:hover {
+  background: #f9f9f9;
+  color: #666;
+}
+
+.tab-btn.active {
+  color: var(--primary-color, #FF69B4);
+  border-bottom-color: var(--primary-color, #FF69B4);
+  background: var(--light-color, #FFF5F8);
+}
+
+.settings-content {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Settings dropdown item */
+.dropdown-item.settings {
+  color: #666;
+}
+
+.dropdown-item.settings:hover {
+  background: var(--light-color, #FFF5F8);
+  color: var(--primary-color, #FF69B4);
+}
+
+/* Parent Settings */
+.parent-settings {
+  padding: 16px;
+}
+
+.parent-settings-content {
+  text-align: left;
+}
+
+.parent-settings .settings-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 20px 0;
+  text-align: center;
+}
+
+.parent-settings .setting-group {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.parent-settings .setting-group:last-of-type {
+  border-bottom: none;
+}
+
+.parent-settings .setting-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.parent-settings .setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.parent-settings .setting-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.parent-settings .setting-desc {
+  font-size: 12px;
+  color: #999;
+}
+
+.range-input {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.range-input input[type="range"] {
+  flex: 1;
+  height: 6px;
+  -webkit-appearance: none;
+  background: #eee;
+  border-radius: 3px;
+  outline: none;
+}
+
+.range-input input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--primary-color, #FF69B4);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.range-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary-color, #FF69B4);
+  min-width: 30px;
+  text-align: center;
+}
+
+.parent-settings .toggle-switch {
+  width: 50px;
+  height: 28px;
+  background: #ddd;
+  border: none;
+  border-radius: 14px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.parent-settings .toggle-switch.on {
+  background: var(--primary-color, #FF69B4);
+}
+
+.parent-settings .toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.3s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.parent-settings .toggle-switch.on .toggle-thumb {
+  transform: translateX(22px);
+}
+
+.parent-settings .reset-btn {
+  width: 100%;
+  padding: 12px;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 16px;
+}
+
+.parent-settings .reset-btn:hover {
+  background: #eee;
+  color: #333;
+}
+
+.parent-locked {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.parent-locked .lock-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.parent-locked p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.unlock-btn {
+  padding: 12px 24px;
+  background: var(--primary-color, #FF69B4);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.unlock-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(255, 105, 180, 0.4);
+}
+
+.parent-tab {
+  color: #888;
+}
+
+@media (max-width: 500px) {
+  .settings-modal {
+    width: 95%;
+    max-height: 85vh;
+  }
+
+  .settings-tabs {
+    padding: 12px 12px 0;
+  }
+
+  .tab-btn {
+    padding: 10px 12px;
+    font-size: 13px;
   }
 }
 </style>

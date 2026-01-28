@@ -387,6 +387,94 @@ export default {
     mathMasterDesc: 'Perfect all levels in all operations!'
   },
 
+  // Accessibility
+  accessibility: {
+    title: 'Accessibility',
+    fontSize: 'Font Size',
+    reduceMotion: 'Reduce Motion',
+    reduceMotionDesc: 'Disable animations',
+    highContrast: 'High Contrast',
+    highContrastDesc: 'Increase visual contrast',
+    reset: 'Reset to Default'
+  },
+
+  // Audio Settings
+  audio: {
+    title: 'Audio Settings',
+    soundEffects: 'Sound Effects',
+    soundEffectsDesc: 'Toggle game sounds',
+    hapticFeedback: 'Haptic Feedback',
+    hapticFeedbackDesc: 'Vibration on key press'
+  },
+
+  // Dark Mode
+  darkMode: {
+    title: 'Display Settings',
+    darkMode: 'Dark Mode',
+    darkModeDesc: 'Switch to dark theme',
+    auto: 'Follow System',
+    autoDesc: 'Automatically follow system setting'
+  },
+
+  // Daily Challenge
+  dailyChallenge: {
+    title: 'Daily Challenge',
+    completed: 'Completed today!',
+    tapToPlay: 'Tap to play!',
+    streak: 'streak',
+    currentStreak: 'Current Streak',
+    bestStreak: 'Best Streak',
+    total: 'Total',
+    rewards: 'Rewards Preview',
+    streakBonus: 'streak bonus',
+    perfectBonus: 'perfect bonus',
+    start: 'Start Challenge'
+  },
+
+  // Wrong Questions
+  wrongQuestions: {
+    title: 'Review Mistakes',
+    empty: 'Awesome! No mistakes',
+    emptyDesc: 'Keep up the great work!',
+    count: '{count} mistakes',
+    practice: 'Practice Now',
+    clear: 'Clear All',
+    clearConfirm: 'Are you sure you want to clear all mistakes?',
+    lastWrong: 'Last wrong',
+    wrongCount: 'Wrong count'
+  },
+
+  // Custom Difficulty
+  customDifficulty: {
+    title: 'Parent Settings',
+    setPin: 'Set Parent PIN',
+    setPinDesc: 'Set a 4-digit PIN to access parent settings',
+    enterPin: 'Enter Parent PIN',
+    enterPinDesc: 'Enter your 4-digit PIN',
+    wrongPin: 'Wrong PIN',
+    invalidPin: 'Invalid PIN format',
+    questionsPerRound: 'Questions per Round',
+    showHints: 'Show Hints',
+    showHintsDesc: 'Show correct answer after wrong response',
+    allowRetry: 'Allow Retry',
+    allowRetryDesc: 'Allow retry after wrong answer',
+    customRanges: 'Custom Ranges',
+    enabled: 'Enabled',
+    min: 'Min',
+    max: 'Max',
+    resetSettings: 'Reset Settings',
+    changePin: 'Change PIN'
+  },
+
+  // Report
+  report: {
+    title: 'Progress Report',
+    generate: 'Generate PDF Report',
+    generating: 'Generating...',
+    success: 'Report generated!',
+    error: 'Failed to generate report'
+  },
+
   // Footer
   footer: {
     privacy: 'This is a pure frontend app. All your data is stored locally in your browser. We never upload any information.',
