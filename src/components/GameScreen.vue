@@ -80,16 +80,6 @@
         </template>
       </div>
 
-      <!-- Retry button (shown after wrong answer) -->
-      <div v-if="showRetry" class="retry-section">
-        <p class="retry-hint">{{ t.game.correctAnswer }}: <strong>{{ formatCorrectAnswer() }}</strong></p>
-        <n-button type="warning" @click="retryQuestion">
-          {{ t.game.retry }} 🔄
-        </n-button>
-        <n-button @click="skipToNext" style="margin-left: 10px">
-          {{ t.game.next }}
-        </n-button>
-      </div>
     </div>
 
     <div class="score-display">
@@ -140,8 +130,6 @@ const userAnswer = ref(null)
 const fractionAnswer = ref({ numerator: null, denominator: null })
 const showFeedback = ref(false)
 const feedbackType = ref('correct')
-const showRetry = ref(false)
-const hasRetried = ref(false)
 const showQuitConfirm = ref(false)
 
 let timer = null
@@ -184,14 +172,6 @@ function formatTime(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-function formatCorrectAnswer() {
-  const answer = currentQuestion.value.answer
-  if (isFraction.value) {
-    return `${answer.numerator}/${answer.denominator}`
-  }
-  return answer
-}
-
 function startTimer() {
   timer = setInterval(() => {
     gameStore.tick()
@@ -214,7 +194,7 @@ function focusInput() {
 }
 
 function submitAnswer() {
-  if (!canSubmit.value || showRetry.value) return
+  if (!canSubmit.value) return
 
   let answer
   let correctAnswer
@@ -247,34 +227,16 @@ function handleAnswer(isCorrect, answer, correctAnswer) {
 
   if (isCorrect) {
     playCorrectSound()
-    gameStore.submitAnswer(answer, correctAnswer, hasRetried.value)
-    moveToNext()
   } else {
     playWrongSound()
-    showRetry.value = true
   }
-}
 
-function retryQuestion() {
-  showRetry.value = false
-  hasRetried.value = true
-  userAnswer.value = null
-  fractionAnswer.value = { numerator: null, denominator: null }
-  focusInput()
-}
-
-function skipToNext() {
-  showRetry.value = false
-  const answer = isFraction.value
-    ? { ...fractionAnswer.value }
-    : userAnswer.value
-  gameStore.submitAnswer(answer, currentQuestion.value.answer, false)
+  // Record answer and move to next question
+  gameStore.submitAnswer(answer, correctAnswer, false)
   moveToNext()
 }
 
 function moveToNext() {
-  hasRetried.value = false
-  showRetry.value = false
 
   if (!gameStore.nextQuestion()) {
     endGame()
@@ -460,23 +422,6 @@ onUnmounted(() => {
   padding: 0 30px !important;
 }
 
-.retry-section {
-  margin-top: 20px;
-  padding: 20px;
-  background: #FFF5F5;
-  border-radius: 12px;
-}
-
-.retry-hint {
-  margin-bottom: 15px;
-  color: #666;
-}
-
-.retry-hint strong {
-  color: var(--primary-color, #FF69B4);
-  font-size: 20px;
-}
-
 .score-display {
   text-align: center;
   margin-top: 20px;
@@ -657,20 +602,6 @@ onUnmounted(() => {
   .submit-btn {
     padding: 0 20px !important;
     font-size: 14px !important;
-  }
-
-  .retry-section {
-    padding: 16px;
-    margin-top: 16px;
-  }
-
-  .retry-hint {
-    font-size: 14px;
-    margin-bottom: 12px;
-  }
-
-  .retry-hint strong {
-    font-size: 18px;
   }
 
   .score-display {

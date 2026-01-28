@@ -19,7 +19,7 @@ export const useUserStore = defineStore('user', () => {
         accent: '#1E90FF',
         mascot: '👦',
         avatar: `${baseUrl}math_prince.png`,
-        title: '数学小王子',
+        title: 'Math Prince',
         decorations: ['⭐', '🚀', '🛡️', '⚡', '🌟', '🎯', '🏆', '💎', '🔥', '🌙']
       }
     }
@@ -32,14 +32,14 @@ export const useUserStore = defineStore('user', () => {
       accent: '#FF1493',
       mascot: '👧',
       avatar: `${baseUrl}math_princess.png`,
-      title: '数学小公主',
+      title: 'Math Princess',
       decorations: ['🌸', '🌺', '🦋', '🌈', '💖', '🎀', '🍬', '✨', '💐', '🌷']
     }
   })
 
   const isNewUser = computed(() => gender.value === null)
 
-  const displayName = computed(() => username.value || (gender.value === 'prince' ? '小王子' : '小公主'))
+  const displayName = computed(() => username.value || (gender.value === 'prince' ? 'Little Prince' : 'Little Princess'))
 
   function setUser(name, g) {
     username.value = name

@@ -22,7 +22,7 @@
           <div class="avatar-ring"></div>
         </div>
         <h1 class="welcome-text">{{ t.userMenu.welcome }}!</h1>
-        <h2 class="user-name-display">{{ userStore.displayName }}</h2>
+        <h2 class="user-name-display">{{ userStore.username || (userStore.gender === 'prince' ? t.welcome.defaultPrince : t.welcome.defaultPrincess) }}</h2>
         <p class="role-badge">
           <span class="badge-icon">👑</span>
           {{ userStore.gender === 'prince' ? t.home.princeTitle : t.home.princessTitle }}
@@ -49,13 +49,33 @@
     <!-- Feature Cards Grid -->
     <div class="feature-grid">
       <FeatureCard type="sticker" icon="🏆" :title="t.home.stickerWall" @click="showStickerWall = true">
-        <div class="sticker-mini-grid">
+        <!-- Show earned stickers or progress -->
+        <div v-if="earnedStickersDisplay.length > 0" class="sticker-mini-grid earned-grid">
           <span
-            v-for="sticker in recentStickers.slice(0, 6)"
+            v-for="sticker in earnedStickersDisplay"
+            :key="sticker.id"
+            class="mini-sticker earned"
+          >{{ sticker.icon }}</span>
+          <span v-if="stickersStore.getEarnedCount() > 12" class="more-stickers">
+            +{{ stickersStore.getEarnedCount() - 12 }}
+          </span>
+        </div>
+        <div v-else class="sticker-mini-grid">
+          <span
+            v-for="sticker in allStickersPreview.slice(0, 10)"
             :key="sticker.id"
             class="mini-sticker"
-            :class="{ earned: stickersStore.hasSticker(sticker.id) }"
           >{{ sticker.icon }}</span>
+        </div>
+        <!-- Progress bar -->
+        <div class="sticker-progress">
+          <div class="progress-bar">
+            <div
+              class="progress-fill"
+              :style="{ width: `${(stickersStore.getTotalEarnedCount() / stickersStore.getTotalPossibleCount()) * 100}%` }"
+            ></div>
+          </div>
+          <span class="progress-text">{{ stickersStore.getTotalEarnedCount() }}/{{ stickersStore.getTotalPossibleCount() }}</span>
         </div>
       </FeatureCard>
       <FeatureCard type="stats" icon="📊" :title="t.home.stats" :description="t.home.subtitle" @click="showStats = true" />
@@ -120,8 +140,16 @@ const decorations = [
   { top: '35%', right: '2%', fontSize: '16px', animationDelay: '2.5s' },
 ]
 
-const recentStickers = computed(() => {
-  return stickersStore.allStickers.slice(0, 6)
+// Get earned stickers with their info
+const earnedStickersDisplay = computed(() => {
+  return stickersStore.allStickers
+    .filter(s => stickersStore.hasSticker(s.id))
+    .slice(0, 12) // Show up to 12 earned stickers
+})
+
+// Get all stickers for display (showing progress)
+const allStickersPreview = computed(() => {
+  return stickersStore.allStickers.slice(0, 20) // Show first 20 achievement stickers
 })
 
 function confirmReset() {
@@ -397,6 +425,54 @@ function openShop() {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.sticker-mini-grid.earned-grid {
+  gap: 4px;
+}
+
+.more-stickers {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--primary-color, #FF69B4);
+  background: var(--light-color, #FFF0F5);
+  border-radius: 50%;
+}
+
+.sticker-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #eee;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color, #FF69B4), var(--accent-color, #FF1493));
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.progress-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary-color, #FF69B4);
+  min-width: 40px;
+  text-align: right;
 }
 
 .mini-sticker {

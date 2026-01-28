@@ -1,19 +1,36 @@
 <template>
   <div class="sticker-wall">
+    <!-- Summary with stats -->
     <div class="sticker-summary">
-      <span class="summary-text">
-        {{ localeStore.translate('stickerWall.collected', {
-          earned: totalEarnedCount,
-          total: totalPossibleCount
-        }) }}
-      </span>
-      <n-progress
-        type="line"
-        :percentage="(totalEarnedCount / totalPossibleCount) * 100"
-        :height="10"
-        :border-radius="5"
-        :show-indicator="false"
-      />
+      <div class="summary-stats">
+        <div class="stat-box">
+          <span class="stat-value">{{ achievementCount }}</span>
+          <span class="stat-label">{{ t.stickerWall?.title || 'Achievement' }}</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-value">{{ purchasedCount }}</span>
+          <span class="stat-label">{{ t.shop?.tabs?.stickers || 'Purchased' }}</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-value">{{ hiddenCount }}</span>
+          <span class="stat-label">{{ t.achievements?.title || 'Hidden' }}</span>
+        </div>
+      </div>
+      <div class="progress-section">
+        <span class="summary-text">
+          {{ localeStore.translate('stickerWall.collected', {
+            earned: totalEarnedCount,
+            total: totalPossibleCount
+          }) }}
+        </span>
+        <n-progress
+          type="line"
+          :percentage="(totalEarnedCount / totalPossibleCount) * 100"
+          :height="10"
+          :border-radius="5"
+          :show-indicator="false"
+        />
+      </div>
     </div>
 
     <n-tabs v-model:value="activeTab" type="segment" animated>
@@ -201,12 +218,14 @@ const stickerInfo = computed(() => {
   return null
 })
 
+// Individual counts
+const achievementCount = computed(() => stickersStore.getEarnedCount())
+const hiddenCount = computed(() => stickersStore.getHiddenAchievementCount())
+const purchasedCount = computed(() => coinsStore.getPurchasedItemsByType('sticker').length)
+
 // Total sticker counts
 const totalEarnedCount = computed(() => {
-  const achievementCount = stickersStore.getEarnedCount()
-  const hiddenCount = stickersStore.getHiddenAchievementCount()
-  const purchasedCount = coinsStore.getPurchasedItemsByType('sticker').length
-  return achievementCount + hiddenCount + purchasedCount
+  return achievementCount.value + hiddenCount.value + purchasedCount.value
 })
 
 const totalPossibleCount = computed(() => stickersStore.getTotalPossibleCount())
@@ -268,6 +287,34 @@ function getCondition(stickerId) {
   padding: 15px;
   background: var(--light-color, #FFF0F5);
   border-radius: 12px;
+}
+
+.summary-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--secondary-color, #FFB6C1);
+}
+
+.stat-box {
+  text-align: center;
+}
+
+.stat-box .stat-value {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary-color, #FF69B4);
+}
+
+.stat-box .stat-label {
+  font-size: 11px;
+  color: #888;
+}
+
+.progress-section {
+  padding-top: 5px;
 }
 
 .summary-text {

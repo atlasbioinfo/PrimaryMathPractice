@@ -22,8 +22,8 @@
 
     <!-- User Profile (when logged in) -->
     <div v-if="!userStore.isNewUser" class="menu-item user-profile" @click="showUserDropdown = !showUserDropdown">
-      <img :src="userStore.theme.avatar" :alt="userStore.displayName" class="user-avatar" />
-      <span class="user-name">{{ userStore.displayName }}</span>
+      <img :src="userStore.theme.avatar" :alt="localizedDisplayName" class="user-avatar" />
+      <span class="user-name">{{ localizedDisplayName }}</span>
       <span class="dropdown-arrow">{{ showUserDropdown ? '▲' : '▼' }}</span>
 
       <div v-if="showUserDropdown" class="dropdown cute-dropdown user-dropdown">
@@ -31,7 +31,7 @@
         <div class="dropdown-header">
           <img :src="userStore.theme.avatar" class="dropdown-avatar" />
           <div class="dropdown-user-info">
-            <span class="dropdown-user-name">{{ userStore.displayName }}</span>
+            <span class="dropdown-user-name">{{ localizedDisplayName }}</span>
             <span class="dropdown-user-role">{{ userStore.gender === 'prince' ? t.welcome.prince : t.welcome.princess }}</span>
           </div>
         </div>
@@ -131,6 +131,9 @@ const userToDelete = ref(null)
 
 const t = computed(() => localeStore.t)
 const currentLocaleName = computed(() => getLocaleDisplayName(localeStore.currentLocale))
+const localizedDisplayName = computed(() =>
+  userStore.username || (userStore.gender === 'prince' ? t.value.welcome?.defaultPrince : t.value.welcome?.defaultPrincess)
+)
 
 // Get other profiles (not the current one)
 const otherProfiles = computed(() => {

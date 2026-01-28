@@ -1,11 +1,11 @@
 <template>
-  <div class="cute-keyboard" :class="theme">
+  <div class="cute-keyboard" :class="theme" tabindex="0" ref="keyboardRef" @keydown="handleKeydown">
     <!-- Display Area -->
     <div class="display-area">
       <div class="display-value" :class="{ empty: !displayValue }">
         {{ displayValue || placeholder }}
       </div>
-      <button v-if="displayValue" class="clear-all-btn" @click="clearAll" type="button">
+      <button class="clear-btn" :class="{ visible: displayValue }" @click="clearAll" type="button" tabindex="-1">
         C
       </button>
     </div>
@@ -13,43 +13,53 @@
     <!-- Number Keys -->
     <div class="keyboard-grid">
       <button
-        v-for="num in [1, 2, 3, 4, 5, 6, 7, 8, 9]"
+        v-for="num in numbers"
         :key="num"
         class="key number-key"
         @click="pressKey(num)"
         type="button"
+        tabindex="-1"
       >
         {{ num }}
       </button>
 
       <!-- Delete Key -->
-      <button class="key delete-key" @click="deleteKey" type="button">
-        <span class="key-icon">⌫</span>
+      <button class="key action-key delete-key" @click="deleteKey" type="button" tabindex="-1">
+        ⌫
       </button>
 
       <!-- Zero Key -->
-      <button class="key number-key zero-key" @click="pressKey(0)" type="button">
+      <button class="key number-key" @click="pressKey(0)" type="button" tabindex="-1">
         0
       </button>
 
       <!-- Confirm Key -->
       <button
-        class="key confirm-key"
+        class="key action-key confirm-key"
         :class="{ disabled: !canConfirm }"
         :disabled="!canConfirm"
         @click="confirm"
         type="button"
+        tabindex="-1"
       >
-        <span class="key-icon">✓</span>
+        ✓
       </button>
+    </div>
+
+    <!-- Keyboard hint -->
+    <div class="keyboard-hint">
+      {{ t.game?.keyboardHint }}
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '../stores/user'
+import { useLocaleStore } from '../stores/locale'
 import { useSound } from '../composables/useSound'
+
+const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 const props = defineProps({
   modelValue: {
@@ -69,17 +79,19 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'confirm'])
 
 const userStore = useUserStore()
+const localeStore = useLocaleStore()
 const { playKeySound, playDeleteSound, playConfirmSound } = useSound()
+
 const theme = computed(() => userStore.theme.name)
+const t = computed(() => localeStore.t)
+const keyboardRef = ref(null)
 
 const displayValue = computed(() => {
   if (props.modelValue === null || props.modelValue === '') return ''
   return String(props.modelValue)
 })
 
-const canConfirm = computed(() => {
-  return displayValue.value !== ''
-})
+const canConfirm = computed(() => displayValue.value !== '')
 
 function pressKey(num) {
   const currentValue = displayValue.value
@@ -100,6 +112,7 @@ function deleteKey() {
 }
 
 function clearAll() {
+  if (!displayValue.value) return
   playDeleteSound()
   emit('update:modelValue', null)
 }
@@ -109,280 +122,261 @@ function confirm() {
   playConfirmSound()
   emit('confirm')
 }
+
+function handleKeydown(e) {
+  // Number keys 0-9
+  if (e.key >= '0' && e.key <= '9') {
+    e.preventDefault()
+    pressKey(parseInt(e.key))
+    return
+  }
+
+  // Backspace - delete
+  if (e.key === 'Backspace') {
+    e.preventDefault()
+    deleteKey()
+    return
+  }
+
+  // Delete key - clear all
+  if (e.key === 'Delete') {
+    e.preventDefault()
+    clearAll()
+    return
+  }
+
+  // Enter - confirm
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    confirm()
+    return
+  }
+
+  // Escape - clear all
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    clearAll()
+    return
+  }
+}
+
+// Global keyboard listener
+function handleGlobalKeydown(e) {
+  // Only handle if not typing in an input field
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+  // Skip if the event target is this keyboard component (already handled by @keydown)
+  if (keyboardRef.value && keyboardRef.value.contains(e.target)) return
+  handleKeydown(e)
+}
+
+onMounted(() => {
+  // Focus the keyboard for immediate input
+  keyboardRef.value?.focus()
+  // Add global listener as backup
+  window.addEventListener('keydown', handleGlobalKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleGlobalKeydown)
+})
 </script>
 
 <style scoped>
 .cute-keyboard {
-  background: linear-gradient(135deg, #FFF5F8 0%, #FFE4EC 100%);
-  border-radius: 24px;
+  --kb-primary: #FF69B4;
+  --kb-primary-dark: #FF1493;
+  --kb-secondary: #FFB6C1;
+  --kb-bg: linear-gradient(145deg, #FFF5F8, #FFE8EF);
+  --kb-key-bg: #fff;
+  --kb-key-shadow: #FFB6C1;
+
+  width: 280px;
   padding: 16px;
-  box-shadow: 0 8px 32px rgba(255, 105, 180, 0.2);
-  border: 3px solid #FFB6C1;
-  max-width: 320px;
-  margin: 0 auto;
+  background: var(--kb-bg);
+  border-radius: 20px;
+  border: 2px solid var(--kb-secondary);
+  box-sizing: border-box;
+  outline: none;
+}
+
+.cute-keyboard:focus {
+  border-color: var(--kb-primary);
+  box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.2);
 }
 
 .cute-keyboard.prince {
-  background: linear-gradient(135deg, #F0F8FF 0%, #DBEAFE 100%);
-  border-color: #87CEEB;
-  box-shadow: 0 8px 32px rgba(74, 144, 217, 0.2);
+  --kb-primary: #4A90D9;
+  --kb-primary-dark: #1E90FF;
+  --kb-secondary: #87CEEB;
+  --kb-bg: linear-gradient(145deg, #F0F8FF, #E1F0FF);
+  --kb-key-shadow: #87CEEB;
 }
 
-/* Display Area */
+.cute-keyboard.prince:focus {
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.2);
+}
+
+/* Display Area - fixed height */
 .display-area {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-  padding: 12px 16px;
-  background: white;
-  border-radius: 16px;
-  border: 2px solid #FFB6C1;
-  min-height: 56px;
-}
-
-.cute-keyboard.prince .display-area {
-  border-color: #87CEEB;
+  height: 52px;
+  margin-bottom: 12px;
+  padding: 0 12px;
+  background: #fff;
+  border-radius: 12px;
+  border: 2px solid var(--kb-secondary);
 }
 
 .display-value {
   flex: 1;
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
-  color: #FF69B4;
+  color: var(--kb-primary);
   text-align: center;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  letter-spacing: 4px;
-}
-
-.cute-keyboard.prince .display-value {
-  color: #4A90D9;
+  letter-spacing: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .display-value.empty {
   color: #ccc;
 }
 
-.clear-all-btn {
-  width: 36px;
-  height: 36px;
+.clear-btn {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, #FFB6C1, #FF69B4);
-  color: white;
+  background: var(--kb-primary);
+  color: #fff;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
-  flex-shrink: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s, transform 0.1s;
 }
 
-.cute-keyboard.prince .clear-all-btn {
-  background: linear-gradient(135deg, #87CEEB, #4A90D9);
+.clear-btn.visible {
+  opacity: 1;
+  visibility: visible;
 }
 
-.clear-all-btn:hover {
-  transform: scale(1.1);
+.clear-btn:active {
+  transform: scale(0.9);
 }
 
-.clear-all-btn:active {
-  transform: scale(0.95);
-}
-
-/* Keyboard Grid */
+/* Keyboard Grid - 3 columns */
 .keyboard-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 8px;
 }
 
-/* Keys */
+/* Base Key Style */
 .key {
-  height: 56px;
-  border-radius: 14px;
+  height: 48px;
+  border-radius: 12px;
   border: none;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  position: relative;
-  overflow: hidden;
-}
-
-.key::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 50%;
-  background: linear-gradient(to bottom, rgba(255,255,255,0.4), transparent);
-  border-radius: 14px 14px 0 0;
-  pointer-events: none;
+  transition: transform 0.1s, box-shadow 0.1s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .key:active {
-  transform: scale(0.95);
+  transform: translateY(2px);
 }
 
 /* Number Keys */
 .number-key {
-  background: linear-gradient(135deg, #FFFFFF 0%, #FFF5F8 100%);
-  color: #FF69B4;
-  box-shadow: 0 4px 0 #FFB6C1, 0 6px 12px rgba(255, 105, 180, 0.2);
-}
-
-.cute-keyboard.prince .number-key {
-  background: linear-gradient(135deg, #FFFFFF 0%, #F0F8FF 100%);
-  color: #4A90D9;
-  box-shadow: 0 4px 0 #87CEEB, 0 6px 12px rgba(74, 144, 217, 0.2);
-}
-
-.number-key:hover {
-  background: linear-gradient(135deg, #FFF5F8 0%, #FFE4EC 100%);
-}
-
-.cute-keyboard.prince .number-key:hover {
-  background: linear-gradient(135deg, #F0F8FF 0%, #DBEAFE 100%);
+  background: var(--kb-key-bg);
+  color: var(--kb-primary);
+  box-shadow: 0 3px 0 var(--kb-key-shadow);
 }
 
 .number-key:active {
-  box-shadow: 0 2px 0 #FFB6C1, 0 3px 6px rgba(255, 105, 180, 0.2);
-  transform: translateY(2px) scale(0.98);
+  box-shadow: 0 1px 0 var(--kb-key-shadow);
 }
 
-.cute-keyboard.prince .number-key:active {
-  box-shadow: 0 2px 0 #87CEEB, 0 3px 6px rgba(74, 144, 217, 0.2);
+/* Action Keys */
+.action-key {
+  font-size: 20px;
 }
 
-/* Delete Key */
 .delete-key {
-  background: linear-gradient(135deg, #FFE4EC 0%, #FFCCD5 100%);
+  background: linear-gradient(145deg, #FFE4EC, #FFCCD5);
   color: #FF6B8A;
-  box-shadow: 0 4px 0 #FFB6C1, 0 6px 12px rgba(255, 107, 138, 0.2);
+  box-shadow: 0 3px 0 #FFB6C1;
 }
 
 .cute-keyboard.prince .delete-key {
-  background: linear-gradient(135deg, #E6F3FF 0%, #BFDBFE 100%);
+  background: linear-gradient(145deg, #E6F3FF, #BFDBFE);
   color: #3B82F6;
-  box-shadow: 0 4px 0 #93C5FD, 0 6px 12px rgba(59, 130, 246, 0.2);
-}
-
-.delete-key:hover {
-  background: linear-gradient(135deg, #FFCCD5 0%, #FFB6C1 100%);
-}
-
-.cute-keyboard.prince .delete-key:hover {
-  background: linear-gradient(135deg, #BFDBFE 0%, #93C5FD 100%);
+  box-shadow: 0 3px 0 #93C5FD;
 }
 
 .delete-key:active {
-  box-shadow: 0 2px 0 #FFB6C1, 0 3px 6px rgba(255, 107, 138, 0.2);
-  transform: translateY(2px) scale(0.98);
+  box-shadow: 0 1px 0 #FFB6C1;
 }
 
 .cute-keyboard.prince .delete-key:active {
-  box-shadow: 0 2px 0 #93C5FD, 0 3px 6px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 1px 0 #93C5FD;
 }
 
-/* Confirm Key */
 .confirm-key {
-  background: linear-gradient(135deg, #FF69B4 0%, #FF1493 100%);
-  color: white;
-  box-shadow: 0 4px 0 #DB2777, 0 6px 12px rgba(255, 20, 147, 0.3);
-}
-
-.cute-keyboard.prince .confirm-key {
-  background: linear-gradient(135deg, #4A90D9 0%, #1E90FF 100%);
-  box-shadow: 0 4px 0 #1D4ED8, 0 6px 12px rgba(30, 144, 255, 0.3);
-}
-
-.confirm-key:hover:not(.disabled) {
-  background: linear-gradient(135deg, #FF1493 0%, #DB2777 100%);
-}
-
-.cute-keyboard.prince .confirm-key:hover:not(.disabled) {
-  background: linear-gradient(135deg, #1E90FF 0%, #1D4ED8 100%);
+  background: linear-gradient(145deg, var(--kb-primary), var(--kb-primary-dark));
+  color: #fff;
+  box-shadow: 0 3px 0 var(--kb-primary-dark);
 }
 
 .confirm-key:active:not(.disabled) {
-  box-shadow: 0 2px 0 #DB2777, 0 3px 6px rgba(255, 20, 147, 0.3);
-  transform: translateY(2px) scale(0.98);
-}
-
-.cute-keyboard.prince .confirm-key:active:not(.disabled) {
-  box-shadow: 0 2px 0 #1D4ED8, 0 3px 6px rgba(30, 144, 255, 0.3);
+  box-shadow: 0 1px 0 var(--kb-primary-dark);
 }
 
 .confirm-key.disabled {
-  background: linear-gradient(135deg, #E5E5E5 0%, #D4D4D4 100%);
+  background: linear-gradient(145deg, #E5E5E5, #D4D4D4);
   color: #A3A3A3;
-  box-shadow: 0 4px 0 #B3B3B3, 0 6px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 3px 0 #B3B3B3;
   cursor: not-allowed;
 }
 
-.key-icon {
-  font-size: 22px;
+/* Keyboard hint */
+.keyboard-hint {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 11px;
+  color: #999;
 }
 
-/* Responsive */
-@media (max-width: 500px) {
-  .cute-keyboard {
-    padding: 12px;
-    border-radius: 20px;
-    max-width: 100%;
-  }
-
-  .display-area {
-    padding: 10px 14px;
-    min-height: 50px;
-    border-radius: 14px;
-    margin-bottom: 12px;
-  }
-
-  .display-value {
-    font-size: 28px;
-    letter-spacing: 3px;
-  }
-
-  .clear-all-btn {
-    width: 32px;
-    height: 32px;
-    font-size: 12px;
-  }
-
-  .keyboard-grid {
-    gap: 8px;
-  }
-
-  .key {
-    height: 50px;
-    font-size: 22px;
-    border-radius: 12px;
-  }
-
-  .key-icon {
-    font-size: 20px;
-  }
-}
-
+/* Mobile adjustments */
 @media (max-width: 360px) {
   .cute-keyboard {
-    padding: 10px;
-    border-radius: 16px;
+    width: 260px;
+    padding: 12px;
   }
 
   .display-area {
-    padding: 8px 12px;
-    min-height: 44px;
+    height: 46px;
+    margin-bottom: 10px;
+    padding: 0 10px;
   }
 
   .display-value {
     font-size: 24px;
+  }
+
+  .clear-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
   }
 
   .keyboard-grid {
@@ -390,13 +384,25 @@ function confirm() {
   }
 
   .key {
-    height: 44px;
+    height: 42px;
     font-size: 20px;
     border-radius: 10px;
   }
 
-  .key-icon {
+  .action-key {
     font-size: 18px;
+  }
+
+  .keyboard-hint {
+    margin-top: 8px;
+    font-size: 10px;
+  }
+}
+
+/* Hide keyboard hint on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .keyboard-hint {
+    display: none;
   }
 }
 </style>

@@ -111,6 +111,15 @@
 
     <!-- Coin Animation -->
     <CoinAnimation ref="coinAnimationRef" />
+
+    <!-- Sticker Unlock Effect -->
+    <StickerUnlockEffect
+      :show="showStickerUnlock"
+      :stickers="unlockStickers"
+      :title="t.result?.newStickers || 'New Sticker!'"
+      :close-text="t.common?.close || 'Awesome!'"
+      @close="closeStickerUnlock"
+    />
   </div>
 </template>
 
@@ -132,6 +141,7 @@ import QuestionReview from './QuestionReview.vue'
 import CoinDisplay from './CoinDisplay.vue'
 import CoinAnimation from './CoinAnimation.vue'
 import CoinRewards from './CoinRewards.vue'
+import StickerUnlockEffect from './StickerUnlockEffect.vue'
 
 const props = defineProps({
   operation: { type: String, required: true },
@@ -151,11 +161,15 @@ const { playVictorySound, playApplauseSound, playStickerSound, playCoinSound } =
 const { celebratePerfect, starBurst, rainbowCelebration, coinRain } = useConfetti()
 
 const t = computed(() => localeStore.t)
+// Auto-expand review if there are wrong answers
 const showReview = ref(false)
+const hasWrongAnswers = computed(() => gameStore.wrongCount > 0)
 const newStickers = ref([])
 const newAchievements = ref([])
 const coinAnimationRef = ref(null)
 const coinRewards = ref(null)
+const showStickerUnlock = ref(false)
+const unlockStickers = ref([])
 
 const encouragementType = computed(() => {
   if (gameStore.correctCount === 10) return 'perfect'
@@ -243,6 +257,11 @@ function formatTime(seconds) {
 }
 
 onMounted(async () => {
+  // Auto-expand review if there are wrong answers
+  if (gameStore.wrongCount > 0) {
+    showReview.value = true
+  }
+
   // Calculate coin rewards
   coinRewards.value = calculateCoins(
     props.level,
@@ -328,12 +347,41 @@ onMounted(async () => {
       setTimeout(() => rainbowCelebration(), 300)
     }
 
-    // Play sticker sound if earned new stickers or achievements
+    // Show sticker unlock effect if earned new stickers or achievements
     if (newStickers.value.length > 0 || newAchievements.value.length > 0) {
-      setTimeout(() => playStickerSound(), 1000)
+      // Prepare stickers for unlock effect
+      const allNewItems = [
+        ...newStickers.value.map(s => ({
+          icon: s.icon,
+          name: getStickerDisplayName(s),
+          description: ''
+        })),
+        ...newAchievements.value.map(a => ({
+          icon: a.icon,
+          name: t.value.achievements?.[a.nameKey] || a.nameKey,
+          description: t.value.achievements?.[a.descKey] || ''
+        }))
+      ]
+      unlockStickers.value = allNewItems
+
+      // Show effect after coin animation
+      setTimeout(() => {
+        showStickerUnlock.value = true
+      }, 1200)
     }
   }
 })
+
+function getStickerDisplayName(sticker) {
+  if (sticker.operationKey && sticker.typeKey) {
+    return `${t.value.operations?.[sticker.operationKey] || sticker.operationKey} ${t.value.stickerWall?.[sticker.typeKey] || sticker.typeKey}`
+  }
+  return sticker.name || ''
+}
+
+function closeStickerUnlock() {
+  showStickerUnlock.value = false
+}
 </script>
 
 <style scoped>

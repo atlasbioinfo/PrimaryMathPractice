@@ -52,7 +52,7 @@
       <div class="review-status">
         <span v-if="answer.isCorrect" class="status-icon correct">✓</span>
         <span v-else class="status-icon wrong">✗</span>
-        <span v-if="answer.retried" class="retried-badge">重试</span>
+        <span v-if="answer.retried" class="retried-badge">{{ t.game?.retriedBadge }}</span>
       </div>
     </div>
   </div>
@@ -61,11 +61,15 @@
 <script setup>
 import { computed } from 'vue'
 import { operationConfig } from '../config/levels'
+import { useLocaleStore } from '../stores/locale'
 
 const props = defineProps({
   answers: { type: Array, required: true },
   operation: { type: String, required: true }
 })
+
+const localeStore = useLocaleStore()
+const t = computed(() => localeStore.t)
 
 const operationInfo = computed(() => operationConfig[props.operation])
 const isFraction = computed(() => operationInfo.value.isFraction)
