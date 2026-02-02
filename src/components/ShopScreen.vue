@@ -132,108 +132,64 @@
     </div>
 
     <!-- Purchase Confirmation Dialog -->
-    <n-modal v-model:show="showConfirmDialog" preset="card" style="max-width: 350px" :closable="false">
-      <template #header>
-        <span>{{ t.shop.confirmPurchase }}</span>
-      </template>
-      <div class="confirm-content">
-        <div class="confirm-item">
-          <span class="confirm-icon">{{ pendingPurchase?.icon }}</span>
-          <span class="confirm-name">{{ pendingPurchase?.name }}</span>
-        </div>
-        <div class="confirm-price">
-          <CoinIcon :size="24" />
-          {{ pendingPurchase?.price }}
-        </div>
-        <div class="balance-after">
-          {{ t.shop.balanceAfter }}: {{ coinsStore.balance - (pendingPurchase?.price || 0) }}
-        </div>
-      </div>
-      <template #footer>
-        <div class="confirm-actions">
-          <n-button @click="showConfirmDialog = false">{{ t.common.cancel }}</n-button>
-          <n-button type="primary" @click="executePurchase">{{ t.shop.buy }}</n-button>
-        </div>
-      </template>
-    </n-modal>
+    <PurchaseConfirmDialog
+      v-model="showConfirmDialog"
+      :purchase="pendingPurchase"
+      @confirm="executePurchase"
+      @cancel="cancelPurchase"
+    />
 
     <!-- Transaction History Modal -->
-    <n-modal v-model:show="showTransactions" preset="card" style="max-width: 400px">
-      <template #header>
-        <span>{{ t.shop.transactionHistory }}</span>
-      </template>
-      <div class="transactions-list">
-        <div class="total-stats">
-          <div class="stat">
-            <span class="stat-label">{{ t.shop.totalEarned }}:</span>
-            <span class="stat-value earn"><CoinIcon :size="16" /> {{ coinsStore.totalEarned }}</span>
-          </div>
-          <div class="stat">
-            <span class="stat-label">{{ t.shop.totalSpent }}:</span>
-            <span class="stat-value spend"><CoinIcon :size="16" /> {{ coinsStore.totalSpent }}</span>
-          </div>
-        </div>
-        <div v-if="coinsStore.transactionHistory.length === 0" class="empty-transactions">
-          {{ t.shop.noTransactions }}
-        </div>
-        <div
-          v-for="tx in coinsStore.transactionHistory"
-          :key="tx.id"
-          class="transaction-item"
-          :class="tx.type"
-        >
-          <div class="tx-info">
-            <span class="tx-reason">{{ getTransactionReason(tx) }}</span>
-            <span class="tx-date">{{ formatDate(tx.timestamp) }}</span>
-          </div>
-          <span class="tx-amount" :class="tx.type">
-            {{ tx.type === 'earn' ? '+' : '-' }}{{ tx.amount }}
-          </span>
-        </div>
-      </div>
-    </n-modal>
+    <TransactionHistoryModal v-model="showTransactions" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
-import { NButton, NModal, useMessage } from 'naive-ui'
-import { useCoinsStore } from '../stores/coins'
-import { useProgressStore } from '../stores/progress'
-import { useLocaleStore } from '../stores/locale'
-import { useSound } from '../composables/useSound'
-import { useConfetti } from '../composables/useConfetti'
+import { NButton, useMessage } from 'naive-ui'
+import { useCoinsStore } from '../stores/coins.js'
+import { useProgressStore } from '../stores/progress.js'
+import { useLocaleStore } from '../stores/locale.js'
+import { useShopPurchase } from '../composables/useShopPurchase.js'
 import {
   purchasableStickers,
   purchasableAvatars,
   avatarFrames,
-  backgroundThemes,
-  levelUnlockPrices
-} from '../config/shop'
+  backgroundThemes
+} from '../config/shop.js'
 
 import CoinDisplay from './CoinDisplay.vue'
-import CoinIcon from './CoinIcon.vue'
 import LevelUnlockCard from './shop/LevelUnlockCard.vue'
 import StickerShopCard from './shop/StickerShopCard.vue'
 import FrameShopCard from './shop/FrameShopCard.vue'
 import BackgroundShopCard from './shop/BackgroundShopCard.vue'
 import AvatarShopCard from './shop/AvatarShopCard.vue'
+import PurchaseConfirmDialog from './shop/PurchaseConfirmDialog.vue'
+import TransactionHistoryModal from './shop/TransactionHistoryModal.vue'
 
-const emit = defineEmits(['back'])
+defineEmits(['back'])
 
 const coinsStore = useCoinsStore()
 const progressStore = useProgressStore()
 const localeStore = useLocaleStore()
 const message = useMessage()
-const { playPurchaseSound, playUnlockSound } = useSound()
-const { purchaseCelebration, unlockCelebration } = useConfetti()
+
+const {
+  showConfirmDialog,
+  pendingPurchase,
+  confirmLevelPurchase,
+  confirmStickerPurchase,
+  confirmFramePurchase,
+  confirmBackgroundPurchase,
+  confirmAvatarPurchase,
+  executePurchase,
+  cancelPurchase
+} = useShopPurchase()
 
 const t = computed(() => localeStore.t)
 
 const activeTab = ref('stickers')
-const showConfirmDialog = ref(false)
 const showTransactions = ref(false)
-const pendingPurchase = ref(null)
 
 const tabs = [
   { key: 'levels', icon: '🔓' },
@@ -243,7 +199,6 @@ const tabs = [
   { key: 'backgrounds', icon: '🌈' }
 ]
 
-// Fraction disabled for now
 const operations = ['addition', 'subtraction', 'multiplication', 'division']
 
 const noLockedLevels = computed(() => {
@@ -259,112 +214,6 @@ function getLockedLevels(operation) {
     }
   }
   return levels
-}
-
-function confirmLevelPurchase({ operation, level, price }) {
-  const levelName = t.value.levels.level + ' ' + level
-  pendingPurchase.value = {
-    type: 'level',
-    operation,
-    level,
-    price,
-    icon: '🔓',
-    name: `${t.value.operations[operation]} - ${levelName}`
-  }
-  showConfirmDialog.value = true
-}
-
-function confirmStickerPurchase(sticker) {
-  pendingPurchase.value = {
-    type: 'sticker',
-    id: sticker.id,
-    price: sticker.price,
-    icon: sticker.icon,
-    name: t.value.shop.stickers[sticker.nameKey] || sticker.nameKey
-  }
-  showConfirmDialog.value = true
-}
-
-function confirmFramePurchase(frame) {
-  pendingPurchase.value = {
-    type: 'frame',
-    id: frame.id,
-    price: frame.price,
-    icon: '🖼️',
-    name: t.value.shop.frames[frame.nameKey] || frame.nameKey
-  }
-  showConfirmDialog.value = true
-}
-
-function confirmBackgroundPurchase(bg) {
-  pendingPurchase.value = {
-    type: 'background',
-    id: bg.id,
-    price: bg.price,
-    icon: bg.preview,
-    name: t.value.shop.backgrounds[bg.nameKey] || bg.nameKey
-  }
-  showConfirmDialog.value = true
-}
-
-function confirmAvatarPurchase(avatar) {
-  pendingPurchase.value = {
-    type: 'avatar',
-    id: avatar.id,
-    price: avatar.price,
-    icon: avatar.preview,
-    name: t.value.shop.avatars?.[avatar.nameKey] || avatar.nameKey
-  }
-  showConfirmDialog.value = true
-}
-
-function executePurchase() {
-  if (!pendingPurchase.value) return
-
-  const { type, id, price, operation, level } = pendingPurchase.value
-  let success = false
-
-  if (type === 'level') {
-    if (coinsStore.spendCoins(price, 'level_unlock', `${operation}_${level}`)) {
-      progressStore.purchaseUnlock(operation, level)
-      success = true
-      playUnlockSound()
-      unlockCelebration()
-    }
-  } else if (type === 'sticker') {
-    success = coinsStore.purchaseItem(id, price, 'sticker')
-    if (success) {
-      playPurchaseSound()
-      purchaseCelebration()
-    }
-  } else if (type === 'frame') {
-    success = coinsStore.purchaseItem(id, price, 'frame')
-    if (success) {
-      playPurchaseSound()
-      purchaseCelebration()
-    }
-  } else if (type === 'background') {
-    success = coinsStore.purchaseItem(id, price, 'background')
-    if (success) {
-      playPurchaseSound()
-      purchaseCelebration()
-    }
-  } else if (type === 'avatar') {
-    success = coinsStore.purchaseItem(id, price, 'avatar')
-    if (success) {
-      playPurchaseSound()
-      purchaseCelebration()
-    }
-  }
-
-  if (success) {
-    message.success(t.value.shop.purchaseSuccess)
-  } else {
-    message.error(t.value.shop.purchaseFailed)
-  }
-
-  showConfirmDialog.value = false
-  pendingPurchase.value = null
 }
 
 function equipFrame(frame) {
@@ -392,29 +241,6 @@ function equipAvatar(avatar) {
 
 function unequipAvatar() {
   coinsStore.equipAvatar(null)
-}
-
-function getTransactionReason(tx) {
-  if (tx.reason.startsWith('purchase_')) {
-    return t.value.shop.transactionReasons.purchase
-  }
-  if (tx.reason === 'level_unlock') {
-    return t.value.shop.transactionReasons.levelUnlock
-  }
-  if (tx.reason === 'level_complete') {
-    return t.value.shop.transactionReasons.levelComplete
-  }
-  return tx.reason
-}
-
-function formatDate(dateStr) {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString(localeStore.currentLocale === 'zh' ? 'zh-CN' : 'en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
 }
 </script>
 
@@ -595,136 +421,6 @@ function formatDate(dateStr) {
   margin-bottom: 12px;
 }
 
-/* Confirm Dialog */
-.confirm-content {
-  text-align: center;
-  padding: 20px 0;
-}
-
-.confirm-item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.confirm-icon {
-  font-size: 40px;
-}
-
-.confirm-name {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-}
-
-.confirm-price {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 24px;
-  font-weight: 700;
-  color: #B8860B;
-  margin-bottom: 8px;
-}
-
-.coin-icon {
-  font-size: 24px;
-}
-
-.balance-after {
-  font-size: 14px;
-  color: #666;
-}
-
-.confirm-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-}
-
-/* Transactions */
-.transactions-list {
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.total-stats {
-  display: flex;
-  gap: 20px;
-  padding: 12px;
-  background: #f5f5f5;
-  border-radius: 12px;
-  margin-bottom: 16px;
-}
-
-.stat {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #666;
-}
-
-.stat-value {
-  font-weight: 700;
-}
-
-.stat-value.earn {
-  color: #52C41A;
-}
-
-.stat-value.spend {
-  color: #FF6B6B;
-}
-
-.empty-transactions {
-  text-align: center;
-  padding: 30px;
-  color: #999;
-}
-
-.transaction-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.tx-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.tx-reason {
-  font-size: 14px;
-  color: #333;
-}
-
-.tx-date {
-  font-size: 12px;
-  color: #999;
-}
-
-.tx-amount {
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.tx-amount.earn {
-  color: #52C41A;
-}
-
-.tx-amount.spend {
-  color: #FF6B6B;
-}
-
 /* Mobile */
 @media (max-width: 768px) {
   .shop-screen {
@@ -806,23 +502,6 @@ function formatDate(dateStr) {
   .backgrounds-grid {
     grid-template-columns: 1fr;
     gap: 12px;
-  }
-
-  .confirm-icon {
-    font-size: 32px;
-  }
-
-  .confirm-name {
-    font-size: 16px;
-  }
-
-  .confirm-price {
-    font-size: 20px;
-  }
-
-  .total-stats {
-    flex-direction: column;
-    gap: 8px;
   }
 }
 </style>

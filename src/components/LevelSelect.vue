@@ -3,109 +3,75 @@
     <div class="header">
       <n-button quaternary circle @click="$emit('back')">
         <template #icon>
-          <span style="font-size: 24px">←</span>
+          <span style="font-size: 24px">{{ backArrow }}</span>
         </template>
       </n-button>
       <h2 class="title">
         <span class="op-icon">{{ operationInfo.icon }}</span>
-        {{ getOperationName() }}
+        {{ operationName }}
       </h2>
       <div style="width: 40px"></div>
     </div>
 
     <div class="level-cards" role="listbox" aria-label="Level selection">
-      <div
-        v-for="level in 6"
+      <LevelCard
+        v-for="level in TOTAL_LEVELS"
         :key="level"
-        :ref="(el) => setCardRef(el, level - 1)"
-        class="level-card"
-        :class="{
-          locked: level > progress.unlockedLevel,
-          completed: progress.completedLevels.includes(level),
-          focused: focusedIndex === level - 1
-        }"
-        role="option"
-        :aria-selected="focusedIndex === level - 1"
-        :aria-disabled="level > progress.unlockedLevel"
-        tabindex="0"
-        @click="selectLevel(level)"
+        :level="level"
+        :icon="levelIcons[level]"
+        :name="getLevelName(level)"
+        :description="getLevelDesc(level)"
+        :level-label="`${t.levels.level} ${level}`"
+        :best-label="t.levels.best"
+        :is-locked="level > progress.unlockedLevel"
+        :is-completed="progress.completedLevels.includes(level)"
+        :is-focused="focusedIndex === level - 1"
+        :unlock-price="levelUnlockPrices[level]"
+        :score="progress.levelScores[level]"
+        :set-card-ref="(el) => setCardRef(el, level - 1)"
+        @select="selectLevel(level)"
         @keydown="handleKeydown"
-        @focus="focusedIndex = level - 1"
-      >
-        <div v-if="level > progress.unlockedLevel" class="lock-overlay" :class="{ purchasable: levelUnlockPrices[level] }">
-          <span class="lock-icon">🔒</span>
-          <div v-if="levelUnlockPrices[level]" class="unlock-price">
-            <CoinIcon :size="14" />
-            {{ levelUnlockPrices[level] }}
-          </div>
-        </div>
-        <div v-if="progress.completedLevels.includes(level)" class="star-badge">
-          ⭐
-        </div>
-
-        <div class="level-number">{{ t.levels.level }} {{ level }}</div>
-        <div class="level-icon">{{ levelIcons[level] }}</div>
-        <div class="level-name">{{ getLevelName(level) }}</div>
-        <div class="level-desc">{{ getLevelDesc(level) }}</div>
-
-        <div v-if="progress.levelScores[level]" class="level-score">
-          {{ t.levels.best }}: {{ progress.levelScores[level].score }}/10
-          ({{ progress.levelScores[level].accuracy }}%)
-        </div>
-      </div>
+        @focus="setFocusedIndex(level - 1)"
+      />
     </div>
 
-    <!-- Level Unlock Dialog -->
-    <n-modal v-model:show="showUnlockDialog" preset="card" style="max-width: 350px" :closable="false">
-      <template #header>
-        <span>🔓 {{ t.shop?.tabs?.levels || 'Unlock Level' }}</span>
-      </template>
-      <div class="unlock-dialog-content">
-        <div class="unlock-level-icon">{{ levelIcons[levelToUnlock] }}</div>
-        <div class="unlock-level-name">{{ t.levels.level }} {{ levelToUnlock }}</div>
-        <div class="unlock-level-title">{{ levelToUnlock ? getLevelName(levelToUnlock) : '' }}</div>
-        <div class="unlock-price-display">
-          <CoinIcon :size="24" />
-          <span class="price-amount">{{ levelToUnlock ? getUnlockPrice(levelToUnlock) : 0 }}</span>
-        </div>
-        <div class="current-balance">
-          {{ t.shop?.balanceAfter || 'Balance after' }}: {{ coinsStore.balance - (levelToUnlock ? getUnlockPrice(levelToUnlock) : 0) }}
-        </div>
-      </div>
-      <template #footer>
-        <div class="unlock-dialog-actions">
-          <n-button @click="showUnlockDialog = false">{{ t.common?.cancel || 'Cancel' }}</n-button>
-          <n-button
-            type="primary"
-            :disabled="!canAffordUnlock(levelToUnlock)"
-            @click="purchaseUnlock"
-          >
-            {{ t.shop?.buy || 'Buy' }}
-          </n-button>
-        </div>
-      </template>
-    </n-modal>
+    <LevelUnlockDialog
+      v-model:show="showUnlockDialog"
+      :level-icon="levelToUnlock ? levelIcons[levelToUnlock] : ''"
+      :level-label="`${t.levels.level} ${levelToUnlock}`"
+      :level-title="levelToUnlock ? getLevelName(levelToUnlock) : ''"
+      :price="levelToUnlock ? getUnlockPrice(levelToUnlock) : 0"
+      :current-balance="coinsStore.balance"
+      :header-text="t.shop?.tabs?.levels || 'Unlock Level'"
+      :balance-after-text="t.shop?.balanceAfter || 'Balance after'"
+      :cancel-text="t.common?.cancel || 'Cancel'"
+      :buy-text="t.shop?.buy || 'Buy'"
+      @cancel="showUnlockDialog = false"
+      @confirm="purchaseUnlock"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
-import { NButton, NModal, useMessage } from 'naive-ui'
-import { useUserStore } from '../stores/user'
-import { useProgressStore } from '../stores/progress'
-import { useLocaleStore } from '../stores/locale'
-import { useCoinsStore } from '../stores/coins'
-import { operationConfig, levelIcons } from '../config/levels'
-import { levelUnlockPrices } from '../config/shop'
-import { useSound } from '../composables/useSound'
-import { useConfetti } from '../composables/useConfetti'
-import CoinIcon from './CoinIcon.vue'
+import { ref, computed } from 'vue'
+import { NButton, useMessage } from 'naive-ui'
+import { useUserStore } from '../stores/user.js'
+import { useProgressStore } from '../stores/progress.js'
+import { useLocaleStore } from '../stores/locale.js'
+import { useCoinsStore } from '../stores/coins.js'
+import { operationConfig, levelIcons } from '../config/levels.js'
+import { levelUnlockPrices } from '../config/shop.js'
+import { useSound } from '../composables/useSound.js'
+import { useConfetti } from '../composables/useConfetti.js'
+import { useLevelNavigation } from '../composables/useLevelNavigation.js'
+import LevelCard from './level-select/LevelCard.vue'
+import LevelUnlockDialog from './level-select/LevelUnlockDialog.vue'
+
+const TOTAL_LEVELS = 6
+const backArrow = '←'
 
 const props = defineProps({
-  operation: {
-    type: String,
-    required: true
-  }
+  operation: { type: String, required: true }
 })
 
 const emit = defineEmits(['back', 'select'])
@@ -120,18 +86,17 @@ const { unlockCelebration } = useConfetti()
 
 const t = computed(() => localeStore.t)
 const operationInfo = computed(() => operationConfig[props.operation])
+const operationName = computed(() => t.value.operations[props.operation])
 const progress = computed(() => progressStore.getOperationProgress(props.operation))
 
 const showUnlockDialog = ref(false)
 const levelToUnlock = ref(null)
 
-// Keyboard navigation
-const focusedIndex = ref(0)
-const cardRefs = ref([])
-
-function getOperationName() {
-  return t.value.operations[props.operation]
-}
+const { focusedIndex, setCardRef, handleKeydown, setFocusedIndex } = useLevelNavigation({
+  totalLevels: TOTAL_LEVELS,
+  onSelect: selectLevel,
+  onBack: () => emit('back')
+})
 
 function getLevelName(level) {
   if (level === 6) {
@@ -149,7 +114,6 @@ function getLevelDesc(level) {
 
 function selectLevel(level) {
   if (level > progress.value.unlockedLevel) {
-    // Show unlock option for locked levels
     if (levelUnlockPrices[level]) {
       levelToUnlock.value = level
       showUnlockDialog.value = true
@@ -162,10 +126,6 @@ function selectLevel(level) {
 
 function getUnlockPrice(level) {
   return levelUnlockPrices[level] || 0
-}
-
-function canAffordUnlock(level) {
-  return coinsStore.canAfford(getUnlockPrice(level))
 }
 
 function purchaseUnlock() {
@@ -186,49 +146,6 @@ function purchaseUnlock() {
     levelToUnlock.value = null
   }
 }
-
-// Keyboard navigation
-const totalLevels = 6
-
-function handleKeydown(event) {
-  const { key } = event
-
-  if (key === 'ArrowDown' || key === 'ArrowRight') {
-    event.preventDefault()
-    focusedIndex.value = (focusedIndex.value + 1) % totalLevels
-    focusCard(focusedIndex.value)
-  } else if (key === 'ArrowUp' || key === 'ArrowLeft') {
-    event.preventDefault()
-    focusedIndex.value = (focusedIndex.value - 1 + totalLevels) % totalLevels
-    focusCard(focusedIndex.value)
-  } else if (key === 'Enter' || key === ' ') {
-    event.preventDefault()
-    selectLevel(focusedIndex.value + 1)
-  } else if (key === 'Escape') {
-    emit('back')
-  }
-}
-
-function focusCard(index) {
-  nextTick(() => {
-    const card = cardRefs.value[index]
-    if (card) {
-      card.focus()
-    }
-  })
-}
-
-function setCardRef(el, index) {
-  if (el) {
-    cardRefs.value[index] = el
-  }
-}
-
-onMounted(() => {
-  nextTick(() => {
-    focusCard(0)
-  })
-})
 </script>
 
 <style scoped>
@@ -262,193 +179,6 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px;
-}
-
-.level-card {
-  background: white;
-  border-radius: 20px;
-  padding: 25px;
-  text-align: center;
-  cursor: pointer;
-  position: relative;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  border: 2px solid var(--secondary-color, #FFB6C1);
-  overflow: hidden;
-}
-
-.level-card:hover:not(.locked),
-.level-card:focus:not(.locked),
-.level-card.focused:not(.locked) {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 35px rgba(0,0,0,0.15);
-  border-color: var(--primary-color, #FF69B4);
-  outline: none;
-}
-
-.level-card:focus-visible {
-  outline: 3px solid var(--accent-color, #FF1493);
-  outline-offset: 2px;
-}
-
-.level-card.locked {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.level-card.completed {
-  background: linear-gradient(135deg, var(--light-color, #FFF0F5), white);
-  border-color: var(--primary-color, #FF69B4);
-}
-
-.lock-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.3);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border-radius: 18px;
-  z-index: 10;
-  cursor: default;
-}
-
-.lock-overlay.purchasable {
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.lock-overlay.purchasable:hover {
-  background: rgba(0,0,0,0.4);
-}
-
-.lock-icon {
-  font-size: 40px;
-}
-
-.unlock-price {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: linear-gradient(135deg, #FFF9E6, #FFE4B5);
-  border: 2px solid #FFD700;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #B8860B;
-}
-
-.unlock-price .coin-icon {
-  font-size: 14px;
-}
-
-/* Unlock Dialog */
-.unlock-dialog-content {
-  text-align: center;
-  padding: 20px 0;
-}
-
-.unlock-level-icon {
-  font-size: 60px;
-  margin-bottom: 12px;
-}
-
-.unlock-level-name {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 4px;
-}
-
-.unlock-level-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--primary-color, #FF69B4);
-  margin-bottom: 16px;
-}
-
-.unlock-price-display {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: linear-gradient(135deg, #FFF9E6, #FFE4B5);
-  border: 2px solid #FFD700;
-  padding: 10px 20px;
-  border-radius: 16px;
-  margin-bottom: 12px;
-}
-
-.unlock-price-display .coin-icon {
-  font-size: 24px;
-}
-
-.price-amount {
-  font-size: 28px;
-  font-weight: 700;
-  color: #B8860B;
-}
-
-.current-balance {
-  font-size: 14px;
-  color: #666;
-}
-
-.unlock-dialog-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-}
-
-.star-badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  font-size: 30px;
-  animation: pulse 1.5s infinite;
-  z-index: 5;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
-}
-
-.level-number {
-  font-size: 14px;
-  color: #999;
-  margin-bottom: 10px;
-}
-
-.level-icon {
-  font-size: 48px;
-  margin-bottom: 10px;
-}
-
-.level-name {
-  font-size: 20px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 8px;
-}
-
-.level-desc {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 10px;
-}
-
-.level-score {
-  font-size: 12px;
-  color: var(--primary-color, #FF69B4);
-  background: var(--light-color, #FFF0F5);
-  padding: 5px 10px;
-  border-radius: 10px;
-  display: inline-block;
 }
 
 /* Tablet */
@@ -492,47 +222,6 @@ onMounted(() => {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
-
-  .level-card {
-    padding: 16px 12px;
-    border-radius: 16px;
-  }
-
-  .lock-icon {
-    font-size: 32px;
-  }
-
-  .star-badge {
-    font-size: 24px;
-    top: -3px;
-    right: -3px;
-  }
-
-  .level-number {
-    font-size: 12px;
-    margin-bottom: 6px;
-  }
-
-  .level-icon {
-    font-size: 36px;
-    margin-bottom: 6px;
-  }
-
-  .level-name {
-    font-size: 14px;
-    margin-bottom: 4px;
-  }
-
-  .level-desc {
-    font-size: 11px;
-    margin-bottom: 8px;
-    line-height: 1.3;
-  }
-
-  .level-score {
-    font-size: 10px;
-    padding: 4px 8px;
-  }
 }
 
 /* Very small screens */
@@ -548,22 +237,6 @@ onMounted(() => {
 
   .level-cards {
     gap: 8px;
-  }
-
-  .level-card {
-    padding: 12px 10px;
-  }
-
-  .level-icon {
-    font-size: 30px;
-  }
-
-  .level-name {
-    font-size: 13px;
-  }
-
-  .level-desc {
-    font-size: 10px;
   }
 }
 </style>

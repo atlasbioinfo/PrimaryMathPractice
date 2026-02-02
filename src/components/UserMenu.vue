@@ -2,9 +2,9 @@
   <div class="user-menu">
     <!-- Language Selector -->
     <div class="menu-item language-selector" @click="showLanguageDropdown = !showLanguageDropdown">
-      <span class="menu-icon">🌐</span>
+      <span class="menu-icon">{{ globeIcon }}</span>
       <span class="menu-text">{{ currentLocaleName }}</span>
-      <span class="dropdown-arrow">{{ showLanguageDropdown ? '▲' : '▼' }}</span>
+      <span class="dropdown-arrow">{{ showLanguageDropdown ? upArrow : downArrow }}</span>
 
       <div v-if="showLanguageDropdown" class="dropdown cute-dropdown">
         <div
@@ -14,7 +14,7 @@
           :class="{ active: locale === localeStore.currentLocale }"
           @click.stop="selectLocale(locale)"
         >
-          <span class="check-mark">{{ locale === localeStore.currentLocale ? '✓' : '' }}</span>
+          <span class="check-mark">{{ locale === localeStore.currentLocale ? checkMark : '' }}</span>
           {{ getLocaleName(locale) }}
         </div>
       </div>
@@ -24,7 +24,7 @@
     <div v-if="!userStore.isNewUser" class="menu-item user-profile" @click="showUserDropdown = !showUserDropdown">
       <img :src="userStore.theme.avatar" :alt="localizedDisplayName" class="user-avatar" />
       <span class="user-name">{{ localizedDisplayName }}</span>
-      <span class="dropdown-arrow">{{ showUserDropdown ? '▲' : '▼' }}</span>
+      <span class="dropdown-arrow">{{ showUserDropdown ? upArrow : downArrow }}</span>
 
       <div v-if="showUserDropdown" class="dropdown cute-dropdown user-dropdown">
         <!-- Current User Header -->
@@ -32,7 +32,7 @@
           <img :src="userStore.theme.avatar" class="dropdown-avatar" />
           <div class="dropdown-user-info">
             <span class="dropdown-user-name">{{ localizedDisplayName }}</span>
-            <span class="dropdown-user-role">{{ userStore.gender === 'prince' ? t.welcome.prince : t.welcome.princess }}</span>
+            <span class="dropdown-user-role">{{ userRoleText }}</span>
           </div>
         </div>
 
@@ -45,13 +45,14 @@
             class="dropdown-item user-item"
             @click.stop="handleSwitchUser(profile.id)"
           >
-            <img
-              :src="profile.gender === 'prince' ? `${baseUrl}math_prince.png` : `${baseUrl}math_princess.png`"
-              class="mini-avatar"
-            />
-            <span class="user-item-name">{{ profile.name || (profile.gender === 'prince' ? t.welcome.defaultPrince : t.welcome.defaultPrincess) }}</span>
-            <button class="delete-user-btn" @click.stop="confirmDeleteUser(profile)" :title="t.userMenu.deleteUser">
-              ✕
+            <img :src="getProfileAvatar(profile)" class="mini-avatar" />
+            <span class="user-item-name">{{ getProfileName(profile) }}</span>
+            <button
+              class="delete-user-btn"
+              :title="t.userMenu.deleteUser"
+              @click.stop="confirmDeleteUser(profile)"
+            >
+              {{ closeIcon }}
             </button>
           </div>
         </div>
@@ -60,7 +61,7 @@
 
         <!-- Add New User -->
         <div class="dropdown-item add-user" @click.stop="showAddUserModal = true">
-          <span class="item-icon">➕</span>
+          <span class="item-icon">{{ addIcon }}</span>
           {{ t.userMenu.addUser }}
         </div>
 
@@ -68,15 +69,15 @@
 
         <!-- Settings -->
         <div class="dropdown-item settings" @click.stop="openSettings">
-          <span class="item-icon">⚙️</span>
+          <span class="item-icon">{{ settingsIcon }}</span>
           {{ t.accessibility?.title || 'Settings' }}
         </div>
 
         <div class="dropdown-divider"></div>
 
         <!-- Logout -->
-        <div class="dropdown-item logout" @click.stop="handleLogout">
-          <span class="item-icon">🚪</span>
+        <div class="dropdown-item logout" @click.stop="handleLogoutAndClose">
+          <span class="item-icon">{{ logoutIcon }}</span>
           {{ t.userMenu.logout }}
         </div>
       </div>
@@ -98,208 +99,77 @@
     <ConfirmModal
       :show="showDeleteConfirm"
       :title="t.userMenu.confirmDelete"
-      :message="t.userMenu.deleteWarning.replace('{name}', userToDelete?.name || '')"
+      :message="deleteWarningMessage"
       :cancel-text="t.userMenu.cancel"
       :confirm-text="t.userMenu.delete"
       type="danger"
       @close="showDeleteConfirm = false"
-      @confirm="handleDeleteUser"
+      @confirm="handleDeleteUserAndClose"
     />
 
-    <!-- Settings Modal -->
-    <Teleport to="body">
-      <div v-if="showSettingsModal" class="settings-modal-overlay" @click.self="closeSettingsModal">
-        <div class="settings-modal">
-          <button class="close-btn" @click="closeSettingsModal">×</button>
-
-          <!-- Tabs -->
-          <div class="settings-tabs">
-            <button
-              class="tab-btn"
-              :class="{ active: activeSettingsTab === 'audio' }"
-              @click="activeSettingsTab = 'audio'"
-            >
-              🔊 {{ t.audio?.title || 'Audio' }}
-            </button>
-            <button
-              class="tab-btn"
-              :class="{ active: activeSettingsTab === 'display' }"
-              @click="activeSettingsTab = 'display'"
-            >
-              🌓 {{ t.darkMode?.title || 'Display' }}
-            </button>
-            <button
-              class="tab-btn"
-              :class="{ active: activeSettingsTab === 'accessibility' }"
-              @click="activeSettingsTab = 'accessibility'"
-            >
-              ⚙️ {{ t.accessibility?.title || 'Settings' }}
-            </button>
-            <button
-              class="tab-btn"
-              :class="{ active: activeSettingsTab === 'advanced' }"
-              @click="activeSettingsTab = 'advanced'"
-            >
-              🎛️ {{ t.customDifficulty?.title || 'Advanced' }}
-            </button>
-          </div>
-
-          <!-- Tab Content -->
-          <div class="settings-content">
-            <AudioSettings v-if="activeSettingsTab === 'audio'" />
-            <DarkModeSettings v-if="activeSettingsTab === 'display'" />
-            <AccessibilitySettings v-if="activeSettingsTab === 'accessibility'" />
-
-            <!-- Advanced Settings -->
-            <div v-if="activeSettingsTab === 'advanced'" class="advanced-settings">
-              <h3 class="settings-title">{{ t.customDifficulty?.title || 'Advanced Settings' }}</h3>
-
-              <!-- Questions per round -->
-              <div class="setting-group">
-                <label class="setting-label">{{ t.customDifficulty?.questionsPerRound || 'Questions per Round' }}</label>
-                <div class="range-input">
-                  <input
-                    type="range"
-                    min="5"
-                    max="20"
-                    :value="customDifficultyStore.questionsPerRound"
-                    @input="customDifficultyStore.updateSettings({ questionsPerRound: parseInt($event.target.value) })"
-                  />
-                  <span class="range-value">{{ customDifficultyStore.questionsPerRound }}</span>
-                </div>
-              </div>
-
-              <!-- Show hints toggle -->
-              <div class="setting-group">
-                <div class="setting-row">
-                  <div class="setting-info">
-                    <span class="setting-label">{{ t.customDifficulty?.showHints || 'Show Hints' }}</span>
-                    <span class="setting-desc">{{ t.customDifficulty?.showHintsDesc || 'Show correct answer' }}</span>
-                  </div>
-                  <button
-                    class="toggle-switch"
-                    :class="{ on: customDifficultyStore.showHints }"
-                    @click="customDifficultyStore.updateSettings({ showHints: !customDifficultyStore.showHints })"
-                  >
-                    <span class="toggle-thumb"></span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Allow retry toggle -->
-              <div class="setting-group">
-                <div class="setting-row">
-                  <div class="setting-info">
-                    <span class="setting-label">{{ t.customDifficulty?.allowRetry || 'Allow Retry' }}</span>
-                    <span class="setting-desc">{{ t.customDifficulty?.allowRetryDesc || 'Allow retry after wrong' }}</span>
-                  </div>
-                  <button
-                    class="toggle-switch"
-                    :class="{ on: customDifficultyStore.allowRetry }"
-                    @click="customDifficultyStore.updateSettings({ allowRetry: !customDifficultyStore.allowRetry })"
-                  >
-                    <span class="toggle-thumb"></span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Screen time limit -->
-              <div class="setting-group screen-time-group">
-                <div class="setting-row">
-                  <div class="setting-info">
-                    <span class="setting-label">{{ t.customDifficulty?.screenTime || 'Screen Time Limit' }}</span>
-                    <span class="setting-desc">{{ t.customDifficulty?.screenTimeDesc || 'Daily play time limit' }}</span>
-                  </div>
-                  <button
-                    class="toggle-switch"
-                    :class="{ on: playTimeStore.isLimitEnabled }"
-                    @click="playTimeStore.setLimitEnabled(!playTimeStore.isLimitEnabled)"
-                  >
-                    <span class="toggle-thumb"></span>
-                  </button>
-                </div>
-                <div v-if="playTimeStore.isLimitEnabled" class="screen-time-details">
-                  <div class="time-limit-row">
-                    <span class="time-label">{{ t.customDifficulty?.minutesPerDay || 'Minutes per day' }}</span>
-                    <div class="time-selector">
-                      <button class="time-btn" @click="playTimeStore.setDailyLimit(playTimeStore.dailyLimitMinutes - 5)">-</button>
-                      <span class="time-value">{{ playTimeStore.dailyLimitMinutes }}</span>
-                      <button class="time-btn" @click="playTimeStore.setDailyLimit(playTimeStore.dailyLimitMinutes + 5)">+</button>
-                    </div>
-                  </div>
-                  <div class="today-progress">
-                    <span class="progress-label">{{ t.customDifficulty?.playedToday || 'Played today' }}: {{ playTimeStore.todayPlayTimeMinutes }} {{ t.customDifficulty?.minutes || 'min' }}</span>
-                    <div class="progress-bar-small">
-                      <div class="progress-fill-small" :style="{ width: `${playTimeStore.progressPercent}%` }"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Reset button -->
-              <button class="reset-btn" @click="customDifficultyStore.reset()">
-                {{ t.customDifficulty?.resetSettings || 'Reset Settings' }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-
+    <SettingsModal :show="showSettingsModal" @close="showSettingsModal = false" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useUserStore } from '../stores/user'
-import { useLocaleStore } from '../stores/locale'
-import { useStatsStore } from '../stores/stats'
-import { useStickersStore } from '../stores/stickers'
-import { useProgressStore } from '../stores/progress'
-import { useCoinsStore } from '../stores/coins'
-import { useProfilesStore } from '../stores/profiles'
-import { useAudioStore } from '../stores/audio'
-import { useAccessibilityStore } from '../stores/accessibility'
-import { getLocaleDisplayName } from '../config/i18n'
+import { useUserStore } from '../stores/user.js'
+import { useLocaleStore } from '../stores/locale.js'
+import { useProfilesStore } from '../stores/profiles.js'
+import { useUserManagement } from '../composables/useUserManagement.js'
+import { getLocaleDisplayName } from '../config/i18n.js'
 import AddUserModal from './AddUserModal.vue'
 import ConfirmModal from './ConfirmModal.vue'
-import AudioSettings from './AudioSettings.vue'
-import AccessibilitySettings from './AccessibilitySettings.vue'
-import DarkModeSettings from './DarkModeSettings.vue'
-import { useCustomDifficultyStore } from '../stores/customDifficulty'
-import { usePlayTimeStore } from '../stores/playTime'
+import SettingsModal from './settings/SettingsModal.vue'
 
 const userStore = useUserStore()
 const localeStore = useLocaleStore()
-const statsStore = useStatsStore()
-const stickersStore = useStickersStore()
-const progressStore = useProgressStore()
-const coinsStore = useCoinsStore()
 const profilesStore = useProfilesStore()
-const audioStore = useAudioStore()
-const accessibilityStore = useAccessibilityStore()
-const customDifficultyStore = useCustomDifficultyStore()
-const playTimeStore = usePlayTimeStore()
+
+const {
+  showAddUserModal,
+  showDeleteConfirm,
+  userToDelete,
+  handleAddUser,
+  handleSwitchUser,
+  confirmDeleteUser,
+  handleDeleteUser,
+  handleLogout
+} = useUserManagement()
 
 const baseUrl = import.meta.env.BASE_URL
 const showLanguageDropdown = ref(false)
 const showUserDropdown = ref(false)
-const showAddUserModal = ref(false)
-const showDeleteConfirm = ref(false)
 const showSettingsModal = ref(false)
-const activeSettingsTab = ref('audio')
-const userToDelete = ref(null)
 
+// Icons as constants
+const globeIcon = '\u{1F310}'     // 🌐
+const upArrow = '\u25B2'          // ▲
+const downArrow = '\u25BC'        // ▼
+const checkMark = '\u2713'        // ✓
+const closeIcon = '\u2715'        // ✕
+const addIcon = '\u2795'          // ➕
+const settingsIcon = '\u2699\uFE0F' // ⚙️
+const logoutIcon = '\u{1F6AA}'    // 🚪
 
 const t = computed(() => localeStore.t)
 const currentLocaleName = computed(() => getLocaleDisplayName(localeStore.currentLocale))
-const localizedDisplayName = computed(() =>
-  userStore.username || (userStore.gender === 'prince' ? t.value.welcome?.defaultPrince : t.value.welcome?.defaultPrincess)
-)
 
-// Get other profiles (not the current one)
+const localizedDisplayName = computed(() => {
+  if (userStore.username) return userStore.username
+  return userStore.gender === 'prince' ? t.value.welcome?.defaultPrince : t.value.welcome?.defaultPrincess
+})
+
+const userRoleText = computed(() => {
+  return userStore.gender === 'prince' ? t.value.welcome.prince : t.value.welcome.princess
+})
+
 const otherProfiles = computed(() => {
   return profilesStore.profiles.filter(p => p.id !== profilesStore.currentProfileId)
+})
+
+const deleteWarningMessage = computed(() => {
+  return t.value.userMenu.deleteWarning.replace('{name}', userToDelete.value?.name || '')
 })
 
 function getLocaleName(locale) {
@@ -311,106 +181,31 @@ function selectLocale(locale) {
   showLanguageDropdown.value = false
 }
 
+function getProfileAvatar(profile) {
+  const avatarFile = profile.gender === 'prince' ? 'math_prince.png' : 'math_princess.png'
+  return `${baseUrl}${avatarFile}`
+}
+
+function getProfileName(profile) {
+  if (profile.name) return profile.name
+  return profile.gender === 'prince' ? t.value.welcome.defaultPrince : t.value.welcome.defaultPrincess
+}
+
 function openSettings() {
   showUserDropdown.value = false
   showSettingsModal.value = true
 }
 
-function closeSettingsModal() {
-  showSettingsModal.value = false
-}
-
-function handleLogout() {
-  userStore.logout()
-  statsStore.reset()
-  stickersStore.reset()
-  progressStore.reset()
-  coinsStore.reset()
+function handleLogoutAndClose() {
+  handleLogout()
   showUserDropdown.value = false
 }
 
-// Helper function to save all current user data to localStorage
-function saveCurrentUserData() {
-  const currentProfileId = profilesStore.currentProfileId
-  if (!currentProfileId) return
-
-  // Save all user-specific stores
-  localStorage.setItem(`mathGame_${currentProfileId}_user`, JSON.stringify({
-    gender: userStore.gender,
-    username: userStore.username,
-    createdAt: userStore.createdAt
-  }))
-  localStorage.setItem(`mathGame_${currentProfileId}_stats`, JSON.stringify(statsStore.$state))
-  localStorage.setItem(`mathGame_${currentProfileId}_stickers`, JSON.stringify(stickersStore.$state))
-  localStorage.setItem(`mathGame_${currentProfileId}_progress`, JSON.stringify(progressStore.$state))
-  localStorage.setItem(`mathGame_${currentProfileId}_coins`, JSON.stringify(coinsStore.$state))
-}
-
-function handleAddUser({ name, gender }) {
-  if (!gender) return
-
-  // Save current user's data before switching
-  saveCurrentUserData()
-
-  // Create new profile
-  const profileId = profilesStore.createProfile(name || null, gender)
-
-  // Switch to the new profile
-  profilesStore.switchProfile(profileId)
-
-  // Manually save profiles to ensure persistence before reload
-  localStorage.setItem('mathGame_profiles', JSON.stringify({
-    profiles: profilesStore.profiles,
-    currentProfileId: profilesStore.currentProfileId
-  }))
-
-  // Close modal
-  showAddUserModal.value = false
-  showUserDropdown.value = false
-
-  // Reload page to load fresh state for new user
-  window.location.reload()
-}
-
-function handleSwitchUser(profileId) {
-  const profile = profilesStore.getProfile(profileId)
-  if (!profile) return
-
-  // Save current user's data before switching
-  saveCurrentUserData()
-
-  // Switch profile
-  profilesStore.switchProfile(profileId)
-
-  // Manually save profiles to ensure persistence before reload
-  localStorage.setItem('mathGame_profiles', JSON.stringify({
-    profiles: profilesStore.profiles,
-    currentProfileId: profilesStore.currentProfileId
-  }))
-
-  // Close dropdown
-  showUserDropdown.value = false
-
-  // Reload page to load the new user's data
-  window.location.reload()
-}
-
-function confirmDeleteUser(profile) {
-  userToDelete.value = profile
-  showDeleteConfirm.value = true
-}
-
-function handleDeleteUser() {
-  if (!userToDelete.value) return
-
-  profilesStore.deleteProfile(userToDelete.value.id)
-
-  showDeleteConfirm.value = false
-  userToDelete.value = null
+function handleDeleteUserAndClose() {
+  handleDeleteUser()
   showUserDropdown.value = false
 }
 
-// Close dropdowns when clicking outside
 function handleClickOutside(e) {
   if (!e.target.closest('.user-menu')) {
     showLanguageDropdown.value = false
@@ -600,6 +395,15 @@ onUnmounted(() => {
   background: var(--light-color, #FFF5F8);
 }
 
+.dropdown-item.settings {
+  color: #666;
+}
+
+.dropdown-item.settings:hover {
+  background: var(--light-color, #FFF5F8);
+  color: var(--primary-color, #FF69B4);
+}
+
 .check-mark {
   width: 16px;
   color: var(--accent-color, #FF1493);
@@ -787,365 +591,6 @@ onUnmounted(() => {
   .user-avatar {
     width: 24px;
     height: 24px;
-  }
-}
-
-/* Settings Modal */
-.settings-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.settings-modal {
-  background: white;
-  border-radius: 20px;
-  width: 90%;
-  max-width: 400px;
-  max-height: 80vh;
-  overflow: hidden;
-  position: relative;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.settings-modal .close-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: #f5f5f5;
-  border-radius: 50%;
-  font-size: 20px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #666;
-  z-index: 10;
-  transition: all 0.2s;
-}
-
-.settings-modal .close-btn:hover {
-  background: #eee;
-  color: #333;
-}
-
-.settings-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  border-bottom: 2px solid #eee;
-  padding: 12px 12px 0;
-  gap: 6px;
-}
-
-.tab-btn {
-  flex: 0 1 auto;
-  min-width: 0;
-  padding: 10px 12px;
-  background: transparent;
-  border: none;
-  border-bottom: 3px solid transparent;
-  font-size: 13px;
-  font-weight: 600;
-  color: #888;
-  cursor: pointer;
-  transition: all 0.2s;
-  border-radius: 10px 10px 0 0;
-  white-space: nowrap;
-}
-
-.tab-btn:hover {
-  background: #f9f9f9;
-  color: #666;
-}
-
-.tab-btn.active {
-  color: var(--primary-color, #FF69B4);
-  border-bottom-color: var(--primary-color, #FF69B4);
-  background: var(--light-color, #FFF5F8);
-}
-
-.settings-content {
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-/* Settings dropdown item */
-.dropdown-item.settings {
-  color: #666;
-}
-
-.dropdown-item.settings:hover {
-  background: var(--light-color, #FFF5F8);
-  color: var(--primary-color, #FF69B4);
-}
-
-/* Advanced Settings */
-.advanced-settings {
-  padding: 16px;
-}
-
-.advanced-settings .settings-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 20px 0;
-  text-align: center;
-}
-
-.advanced-settings .setting-group {
-  margin-bottom: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #eee;
-}
-
-.advanced-settings .setting-group:last-of-type {
-  border-bottom: none;
-}
-
-.advanced-settings .setting-label {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 8px;
-}
-
-.advanced-settings .setting-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.advanced-settings .setting-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.advanced-settings .setting-desc {
-  font-size: 12px;
-  color: #999;
-}
-
-.range-input {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.range-input input[type="range"] {
-  flex: 1;
-  height: 6px;
-  -webkit-appearance: none;
-  background: #eee;
-  border-radius: 3px;
-  outline: none;
-}
-
-.range-input input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
-  background: var(--primary-color, #FF69B4);
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.range-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--primary-color, #FF69B4);
-  min-width: 30px;
-  text-align: center;
-}
-
-.advanced-settings .toggle-switch {
-  width: 50px;
-  height: 28px;
-  background: #ddd;
-  border: none;
-  border-radius: 14px;
-  position: relative;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.advanced-settings .toggle-switch.on {
-  background: var(--primary-color, #FF69B4);
-}
-
-.advanced-settings .toggle-thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 24px;
-  height: 24px;
-  background: white;
-  border-radius: 50%;
-  transition: transform 0.3s;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.advanced-settings .toggle-switch.on .toggle-thumb {
-  transform: translateX(22px);
-}
-
-/* Screen Time Settings */
-.screen-time-group {
-  background: var(--light-color, #FFF5F8);
-  border-radius: 12px;
-  padding: 16px;
-  margin-top: 8px;
-}
-
-.screen-time-details {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px dashed var(--secondary-color, #FFB6C1);
-}
-
-.time-limit-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.time-label {
-  font-size: 13px;
-  color: #666;
-}
-
-.time-selector {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.time-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 50%;
-  background: var(--primary-color, #FF69B4);
-  color: white;
-  font-size: 18px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.time-btn:hover {
-  transform: scale(1.1);
-}
-
-.time-btn:active {
-  transform: scale(0.95);
-}
-
-.time-value {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--primary-color, #FF69B4);
-  min-width: 40px;
-  text-align: center;
-}
-
-.today-progress {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.progress-label {
-  font-size: 12px;
-  color: #888;
-}
-
-.progress-bar-small {
-  height: 6px;
-  background: #e0e0e0;
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.progress-fill-small {
-  height: 100%;
-  background: linear-gradient(90deg, var(--primary-color, #FF69B4), var(--accent-color, #FF1493));
-  border-radius: 3px;
-  transition: width 0.3s;
-}
-
-.advanced-settings .reset-btn {
-  width: 100%;
-  padding: 12px;
-  background: #f5f5f5;
-  border: none;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #666;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 16px;
-}
-
-.advanced-settings .reset-btn:hover {
-  background: #eee;
-  color: #333;
-}
-
-@media (max-width: 500px) {
-  .settings-modal {
-    width: 95%;
-    max-height: 85vh;
-  }
-
-  .settings-tabs {
-    padding: 10px 10px 0;
-    gap: 4px;
-  }
-
-  .tab-btn {
-    padding: 8px 10px;
-    font-size: 12px;
-    border-radius: 8px 8px 0 0;
-  }
-}
-
-@media (max-width: 360px) {
-  .settings-tabs {
-    padding: 8px 8px 0;
-    gap: 3px;
-  }
-
-  .tab-btn {
-    padding: 6px 8px;
-    font-size: 11px;
   }
 }
 </style>

@@ -1,13 +1,13 @@
 <template>
   <div class="game-screen" role="main" aria-label="Math practice game">
     <div class="game-header" role="banner">
-      <button class="quit-btn" @click="showQuitConfirm = true" :title="t.game.quit">✕</button>
+      <button class="quit-btn" @click="showQuitConfirm = true" :title="t.game.quit">&#x2715;</button>
       <div class="level-badge">{{ operationInfo.icon }} {{ levelName }}</div>
       <div class="timer-container">
         <CuteClock :timeLeft="gameStore.timeLeft" />
         <div class="timer" :class="{ warning: gameStore.timeLeft <= 30 }">{{ formatTime(gameStore.timeLeft) }}</div>
       </div>
-      <div class="progress-info">📝 {{ gameStore.currentQuestionIndex + 1 }} / {{ totalQuestions }}</div>
+      <div class="progress-info">&#x1F4DD; {{ gameStore.currentQuestionIndex + 1 }} / {{ totalQuestions }}</div>
     </div>
 
     <QuitModal
@@ -67,7 +67,7 @@
           <CuteKeyboard
             v-model="userAnswer"
             :placeholder="t.game.yourAnswer"
-            @confirm="submitAnswer"
+            @confirm="handleSubmit"
           />
         </template>
 
@@ -75,7 +75,7 @@
         <template v-else>
           <FractionKeyboard
             v-model="fractionAnswer"
-            @confirm="submitAnswer"
+            @confirm="handleSubmit"
           />
         </template>
       </div>
@@ -105,14 +105,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { NButton, NProgress } from 'naive-ui'
-import { useGameStore } from '../stores/game'
-import { useUserStore } from '../stores/user'
-import { useLocaleStore } from '../stores/locale'
-import { useWrongQuestionsStore } from '../stores/wrongQuestions'
-import { operationConfig } from '../config/levels'
-import { useSound } from '../composables/useSound'
+import { ref, computed } from 'vue'
+import { NProgress } from 'naive-ui'
+import { useGameStore } from '../stores/game.js'
+import { useUserStore } from '../stores/user.js'
+import { useLocaleStore } from '../stores/locale.js'
+import { operationConfig } from '../config/levels.js'
+import { useGameTimer } from '../composables/useGameTimer.js'
+import { useGameAnswer } from '../composables/useGameAnswer.js'
 import CuteClock from './CuteClock.vue'
 import QuitModal from './QuitModal.vue'
 import FractionDisplay from './FractionDisplay.vue'
@@ -131,18 +131,10 @@ const emit = defineEmits(['complete', 'quit'])
 const gameStore = useGameStore()
 const userStore = useUserStore()
 const localeStore = useLocaleStore()
-const wrongQuestionsStore = useWrongQuestionsStore()
-const { playCorrectSound, playWrongSound } = useSound()
 
 const t = computed(() => localeStore.t)
 const totalQuestions = 10
-const userAnswer = ref(null)
-const fractionAnswer = ref({ numerator: null, denominator: null })
-const showFeedback = ref(false)
-const feedbackType = ref('correct')
 const showQuitConfirm = ref(false)
-
-let timer = null
 
 const operationInfo = computed(() => operationConfig[props.operation])
 const isFraction = computed(() => operationInfo.value.isFraction)
@@ -157,8 +149,6 @@ const levelName = computed(() => {
   return t.value.levels.levelNames[props.level]
 })
 
-const currentQuestion = computed(() => gameStore.currentQuestion)
-
 const progressPercent = computed(() => {
   return (gameStore.currentQuestionIndex / totalQuestions) * 100
 })
@@ -169,107 +159,10 @@ const progressColor = computed(() => {
   return '#FF6B6B'
 })
 
-const canSubmit = computed(() => {
-  if (isFraction.value) {
-    return fractionAnswer.value.numerator !== null && fractionAnswer.value.denominator !== null
-  }
-  return userAnswer.value !== null
-})
-
 function formatTime(seconds) {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
   return `${mins}:${secs.toString().padStart(2, '0')}`
-}
-
-function startTimer() {
-  timer = setInterval(() => {
-    gameStore.tick()
-    if (gameStore.timeLeft <= 0) {
-      endGame()
-    }
-  }, 1000)
-}
-
-function stopTimer() {
-  if (timer) {
-    clearInterval(timer)
-    timer = null
-  }
-}
-
-function focusInput() {
-  // CuteKeyboard and FractionKeyboard don't need traditional focus
-  // They use touch/click interactions
-}
-
-function submitAnswer() {
-  if (!canSubmit.value) return
-
-  let answer
-  let correctAnswer
-
-  if (isFraction.value) {
-    answer = { ...fractionAnswer.value }
-    correctAnswer = currentQuestion.value.answer
-    const gcd = (a, b) => b === 0 ? a : gcd(b, a % b)
-    const g1 = gcd(correctAnswer.numerator, correctAnswer.denominator)
-    const g2 = gcd(answer.numerator, answer.denominator)
-    const isCorrect =
-      correctAnswer.numerator / g1 === answer.numerator / g2 &&
-      correctAnswer.denominator / g1 === answer.denominator / g2
-    handleAnswer(isCorrect, answer, correctAnswer)
-  } else {
-    answer = userAnswer.value
-    correctAnswer = currentQuestion.value.answer
-    const isCorrect = answer === correctAnswer
-    handleAnswer(isCorrect, answer, correctAnswer)
-  }
-}
-
-function handleAnswer(isCorrect, answer, correctAnswer) {
-  feedbackType.value = isCorrect ? 'correct' : 'wrong'
-  showFeedback.value = true
-
-  setTimeout(() => {
-    showFeedback.value = false
-  }, 500)
-
-  if (isCorrect) {
-    playCorrectSound()
-    // In review mode, record correct answer for Ebbinghaus tracking
-    if (props.isReviewMode && props.reviewQuestions.length > 0) {
-      const questionId = props.reviewQuestions[gameStore.currentQuestionIndex]
-      if (questionId) {
-        wrongQuestionsStore.recordCorrectAnswer(questionId)
-      }
-    }
-  } else {
-    playWrongSound()
-    // Record wrong answer for review
-    wrongQuestionsStore.addWrongQuestion(
-      props.operation,
-      props.level,
-      currentQuestion.value,
-      answer,
-      correctAnswer
-    )
-  }
-
-  // Record answer and move to next question
-  gameStore.submitAnswer(answer, correctAnswer, false)
-  moveToNext()
-}
-
-function moveToNext() {
-
-  if (!gameStore.nextQuestion()) {
-    endGame()
-  } else {
-    userAnswer.value = null
-    fractionAnswer.value = { numerator: null, denominator: null }
-    focusInput()
-  }
 }
 
 function endGame() {
@@ -285,414 +178,34 @@ function handleQuit() {
   emit('quit')
 }
 
-onMounted(() => {
-  startTimer()
-  focusInput()
+function moveToNext() {
+  if (!gameStore.nextQuestion()) {
+    endGame()
+  } else {
+    resetAnswers()
+  }
+}
+
+// Use the game timer composable
+const { stopTimer } = useGameTimer(gameStore, endGame)
+
+// Use the game answer composable
+const {
+  userAnswer,
+  fractionAnswer,
+  showFeedback,
+  feedbackType,
+  currentQuestion,
+  submitAnswer,
+  resetAnswers
+} = useGameAnswer({
+  props,
+  onMoveNext: moveToNext
 })
 
-onUnmounted(() => {
-  stopTimer()
-})
+function handleSubmit() {
+  submitAnswer(isFraction.value)
+}
 </script>
 
-<style scoped>
-.game-screen {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.game-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 12px 16px;
-  border-radius: 16px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  position: relative;
-}
-
-/* Quit Button */
-.quit-btn {
-  position: relative;
-  left: auto;
-  top: auto;
-  transform: none;
-  flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: 2px solid #FF6B6B;
-  background: linear-gradient(135deg, #FFF5F5 0%, #FFE4E4 100%);
-  color: #FF6B6B;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
-}
-
-.quit-btn:hover {
-  border-color: #FF4444;
-  color: white;
-  background: linear-gradient(135deg, #FF6B6B 0%, #FF4444 100%);
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
-}
-
-.level-badge, .progress-info {
-  font-size: 16px;
-  color: var(--primary-color, #FF69B4);
-  font-weight: bold;
-}
-
-.timer-container {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.timer {
-  font-size: 24px;
-  color: var(--primary-color, #FF69B4);
-  font-weight: bold;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 8px 16px;
-  border-radius: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.timer.warning {
-  color: #FF6B6B;
-  animation: blink 0.5s infinite;
-  background: rgba(255, 107, 107, 0.1);
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.game-progress {
-  margin-bottom: 30px;
-}
-
-.question-container {
-  background: white;
-  border-radius: 24px;
-  padding: 40px;
-  text-align: center;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-  border: 2px solid var(--secondary-color, #FFB6C1);
-}
-
-.question-card {
-  margin-bottom: 30px;
-}
-
-.question-number {
-  font-size: 16px;
-  color: #999;
-  margin-bottom: 20px;
-}
-
-.question-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
-  font-size: 42px;
-  font-weight: bold;
-}
-
-.fraction-question {
-  font-size: 24px;
-}
-
-.number {
-  color: #333;
-  background: #f5f5f5;
-  padding: 10px 20px;
-  border-radius: 12px;
-}
-
-.operator {
-  color: var(--primary-color, #FF69B4);
-  font-size: 36px;
-}
-
-.equals {
-  color: #666;
-}
-
-.answer-box {
-  color: var(--primary-color, #FF69B4);
-}
-
-.answer-section {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  justify-content: center;
-  align-items: center;
-}
-
-.submit-btn {
-  padding: 0 30px !important;
-}
-
-.score-display {
-  text-align: center;
-  margin-top: 20px;
-  font-size: 18px;
-  color: var(--primary-color, #FF69B4);
-  background: rgba(255, 255, 255, 0.8);
-  padding: 10px 20px;
-  border-radius: 20px;
-  display: inline-block;
-  margin-left: 50%;
-  transform: translateX(-50%);
-}
-
-.correct-count {
-  color: #52C41A;
-  font-weight: bold;
-}
-
-.wrong-count {
-  color: #FF8080;
-  font-weight: bold;
-}
-
-.feedback-overlay {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 1000;
-  pointer-events: none;
-}
-
-.feedback-content {
-  font-size: 48px;
-  font-weight: bold;
-  padding: 20px 40px;
-  border-radius: 20px;
-}
-
-.feedback-overlay.correct .feedback-content {
-  background: #52C41A;
-  color: white;
-}
-
-.feedback-overlay.wrong .feedback-content {
-  background: #FF6B6B;
-  color: white;
-}
-
-.feedback-enter-active {
-  animation: feedbackIn 0.3s ease;
-}
-
-.feedback-leave-active {
-  animation: feedbackOut 0.2s ease;
-}
-
-@keyframes feedbackIn {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.5);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-}
-
-@keyframes feedbackOut {
-  from {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(1.2);
-  }
-}
-
-/* Tablet */
-@media (max-width: 768px) {
-  .game-screen {
-    padding: 16px;
-    padding-top: 60px;
-  }
-
-  .game-header {
-    padding: 12px 16px;
-  }
-
-  .question-container {
-    padding: 30px 25px;
-  }
-}
-
-/* Mobile */
-@media (max-width: 500px) {
-  .game-screen {
-    padding: 12px;
-    padding-top: 55px;
-  }
-
-  .game-header {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-    padding: 10px 12px;
-    border-radius: 12px;
-    margin-bottom: 12px;
-  }
-
-  .quit-btn {
-    width: 34px;
-    height: 34px;
-    font-size: 14px;
-    order: 0;
-  }
-
-  .level-badge {
-    font-size: 12px;
-    order: 1;
-  }
-
-  .timer-container {
-    order: 2;
-    gap: 6px;
-  }
-
-  .timer {
-    font-size: 18px;
-    padding: 6px 12px;
-  }
-
-  .progress-info {
-    font-size: 12px;
-    order: 3;
-  }
-
-  .game-progress {
-    margin-bottom: 16px;
-  }
-
-  .question-container {
-    padding: 24px 16px;
-    border-radius: 20px;
-  }
-
-  .question-card {
-    margin-bottom: 20px;
-  }
-
-  .question-number {
-    font-size: 14px;
-    margin-bottom: 16px;
-  }
-
-  .question-content {
-    font-size: 28px;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .number {
-    padding: 8px 14px;
-    border-radius: 10px;
-    font-size: 26px;
-  }
-
-  .operator {
-    font-size: 28px;
-  }
-
-  .answer-section {
-    gap: 10px;
-  }
-
-  .submit-btn {
-    padding: 0 20px !important;
-    font-size: 14px !important;
-  }
-
-  .score-display {
-    font-size: 14px;
-    padding: 8px 16px;
-    margin-top: 16px;
-  }
-
-  .feedback-content {
-    font-size: 32px;
-    padding: 16px 28px;
-    border-radius: 16px;
-  }
-
-  .fraction-question {
-    font-size: 18px;
-  }
-}
-
-/* Very small screens */
-@media (max-width: 360px) {
-  .game-screen {
-    padding: 10px;
-    padding-top: 50px;
-  }
-
-  .game-header {
-    padding: 8px 10px;
-  }
-
-  .quit-btn {
-    width: 30px;
-    height: 30px;
-    font-size: 12px;
-  }
-
-  .level-badge, .progress-info {
-    font-size: 11px;
-  }
-
-  .timer {
-    font-size: 16px;
-    padding: 5px 10px;
-  }
-
-  .question-container {
-    padding: 20px 12px;
-  }
-
-  .question-content {
-    font-size: 24px;
-    gap: 6px;
-  }
-
-  .number {
-    padding: 6px 10px;
-    font-size: 22px;
-  }
-
-  .operator {
-    font-size: 24px;
-  }
-
-  .feedback-content {
-    font-size: 28px;
-    padding: 12px 24px;
-  }
-}
-</style>
+<style scoped src="./GameScreen.css"></style>

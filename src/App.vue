@@ -31,7 +31,7 @@
             <!-- Gender Selection (First time) -->
             <GenderSelect
               v-if="userStore.isNewUser"
-              @selected="onGenderSelected"
+              @selected="applyTheme"
             />
 
             <!-- Home Screen -->
@@ -120,20 +120,14 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
-import {
-  NConfigProvider,
-  NMessageProvider,
-  NDialogProvider
-} from 'naive-ui'
-import { useUserStore } from './stores/user'
-import { useGameStore } from './stores/game'
-import { useCoinsStore } from './stores/coins'
-import { useLocaleStore } from './stores/locale'
-import { usePlayTimeStore } from './stores/playTime'
-import { useTheme } from './composables/useTheme'
-import { generateQuestions } from './config/levels'
-import { backgroundThemes } from './config/shop'
+import { onMounted, defineAsyncComponent } from 'vue'
+import { NConfigProvider, NMessageProvider, NDialogProvider } from 'naive-ui'
+import { useUserStore } from './stores/user.js'
+import { useLocaleStore } from './stores/locale.js'
+import { useTheme } from './composables/useTheme.js'
+import { useScreenRouter } from './composables/useScreenRouter.js'
+import { useBackground } from './composables/useBackground.js'
+import { usePlayTimeTracking } from './composables/usePlayTimeTracking.js'
 
 // Eagerly loaded components (needed immediately)
 import FloatingDecorations from './components/FloatingDecorations.vue'
@@ -150,211 +144,51 @@ import AppFooter from './components/AppFooter.vue'
 import RestReminderModal from './components/RestReminderModal.vue'
 
 // Lazy loaded components (loaded on demand)
-const ResultScreen = defineAsyncComponent(() =>
-  import('./components/ResultScreen.vue')
-)
-const ShopScreen = defineAsyncComponent(() =>
-  import('./components/ShopScreen.vue')
-)
-const DailyChallengeScreen = defineAsyncComponent(() =>
-  import('./components/DailyChallengeScreen.vue')
-)
-const WrongQuestionsScreen = defineAsyncComponent(() =>
-  import('./components/WrongQuestionsScreen.vue')
-)
+const ResultScreen = defineAsyncComponent(() => import('./components/ResultScreen.vue'))
+const ShopScreen = defineAsyncComponent(() => import('./components/ShopScreen.vue'))
+const DailyChallengeScreen = defineAsyncComponent(() => import('./components/DailyChallengeScreen.vue'))
+const WrongQuestionsScreen = defineAsyncComponent(() => import('./components/WrongQuestionsScreen.vue'))
 
+// Stores
 const userStore = useUserStore()
-const gameStore = useGameStore()
-const coinsStore = useCoinsStore()
 const localeStore = useLocaleStore()
-const playTimeStore = usePlayTimeStore()
+
+// Theme
 const { themeOverrides, applyTheme, initDarkMode } = useTheme()
 
-const currentScreen = ref('home')
-const showRestReminder = ref(false)
-let playTimeInterval = null
-const selectedOperation = ref(null)
-const selectedLevel = ref(null)
-const showCountdown = ref(false)
-const pendingGameStart = ref(null)
-const isReviewMode = ref(false)
-const reviewQuestionIds = ref([])
+// Background
+const { equippedBackground, backgroundStyle } = useBackground()
 
-// Get equipped background theme
-const equippedBackground = computed(() => {
-  if (!coinsStore.equippedBackground) return null
-  return backgroundThemes.find(bg => bg.id === coinsStore.equippedBackground)
-})
-
-const backgroundStyle = computed(() => {
-  if (!equippedBackground.value) return {}
-  return {
-    background: equippedBackground.value.gradient
-  }
-})
-
-function onGenderSelected(gender) {
-  applyTheme()
-}
-
-function goHome() {
-  currentScreen.value = 'home'
-  gameStore.reset()
-}
-
-function goToShop() {
-  currentScreen.value = 'shop'
-}
-
-function goToDailyChallenge() {
-  currentScreen.value = 'dailyChallenge'
-}
-
-function goToWrongQuestions() {
-  currentScreen.value = 'wrongQuestions'
-}
-
-function startDailyChallenge(config) {
-  // Import daily challenge store dynamically
-  import('./stores/dailyChallenge').then(({ useDailyChallengeStore }) => {
-    const challengeStore = useDailyChallengeStore()
-    const questions = challengeStore.generateTodayQuestions()
-    selectedOperation.value = config.operation
-    selectedLevel.value = config.level
-    gameStore.startGame(config.operation, config.level, questions)
-    currentScreen.value = 'playing'
-  })
-}
-
-function startWrongQuestionsPractice(wrongQuestions) {
-  // Convert wrong questions to a format the game can use
-  if (wrongQuestions.length === 0) return
-
-  // Use the first question's operation and level
-  const firstQ = wrongQuestions[0]
-  selectedOperation.value = firstQ.operation
-  selectedLevel.value = firstQ.level
-
-  // Set review mode and store question IDs for tracking correct answers
-  isReviewMode.value = true
-  reviewQuestionIds.value = wrongQuestions.map(wq => wq.id)
-
-  const questions = wrongQuestions.map(wq => wq.question)
-  gameStore.startGame(firstQ.operation, firstQ.level, questions)
-  currentScreen.value = 'playing'
-}
-
-function goToOperationSelect() {
-  currentScreen.value = 'operationSelect'
-}
-
-function onOperationSelect(operation) {
-  selectedOperation.value = operation
-  currentScreen.value = 'levelSelect'
-}
-
-function onLevelSelect(level) {
-  selectedLevel.value = level
-  startGame()
-}
-
-function startGame() {
-  // Show countdown before starting the game
-  pendingGameStart.value = {
-    operation: selectedOperation.value,
-    level: selectedLevel.value
-  }
-  showCountdown.value = true
-}
-
-function onCountdownComplete() {
-  showCountdown.value = false
-
-  if (pendingGameStart.value) {
-    const { operation, level } = pendingGameStart.value
-    const questions = generateQuestions(operation, level, 10)
-    // Reset review mode for normal game
-    isReviewMode.value = false
-    reviewQuestionIds.value = []
-    gameStore.startGame(operation, level, questions)
-    currentScreen.value = 'playing'
-    pendingGameStart.value = null
-  }
-}
-
-function onGameComplete() {
-  currentScreen.value = 'result'
-}
-
-function onGameQuit() {
-  currentScreen.value = 'levelSelect'
-}
-
-function retryLevel() {
-  startGame()
-}
-
-function nextLevel() {
-  selectedLevel.value++
-  startGame()
-}
+// Screen routing
+const {
+  currentScreen,
+  selectedOperation,
+  selectedLevel,
+  showCountdown,
+  isReviewMode,
+  reviewQuestionIds,
+  goHome,
+  goToShop,
+  goToDailyChallenge,
+  goToWrongQuestions,
+  goToOperationSelect,
+  startDailyChallenge,
+  startWrongQuestionsPractice,
+  onOperationSelect,
+  onLevelSelect,
+  onCountdownComplete,
+  onGameComplete,
+  onGameQuit,
+  retryLevel,
+  nextLevel
+} = useScreenRouter()
 
 // Play time tracking
-function startPlayTimeTracking() {
-  if (playTimeInterval) return
-
-  playTimeStore.startPlaying()
-
-  // Check limit every 10 seconds
-  playTimeInterval = setInterval(() => {
-    playTimeStore.addPlayTime(10)
-
-    // Check if limit reached
-    if (playTimeStore.isLimitReached && !showRestReminder.value) {
-      showRestReminder.value = true
-      stopPlayTimeTracking()
-    }
-  }, 10000) // 10 seconds
-}
-
-function stopPlayTimeTracking() {
-  if (playTimeInterval) {
-    clearInterval(playTimeInterval)
-    playTimeInterval = null
-  }
-  playTimeStore.stopPlaying()
-}
-
-function handleRestReminderClose() {
-  showRestReminder.value = false
-  // Go back to home when rest reminder is closed
-  goHome()
-}
-
-// Watch for screen changes to track play time
-watch(currentScreen, (newScreen, oldScreen) => {
-  const playingScreens = ['playing', 'dailyChallenge']
-
-  if (playingScreens.includes(newScreen)) {
-    // Check if limit already reached before starting
-    if (playTimeStore.isLimitReached) {
-      showRestReminder.value = true
-      currentScreen.value = 'home'
-      return
-    }
-    startPlayTimeTracking()
-  } else if (playingScreens.includes(oldScreen)) {
-    stopPlayTimeTracking()
-  }
-})
+const { showRestReminder, playTimeStore, handleRestReminderClose } = usePlayTimeTracking(currentScreen, goHome)
 
 onMounted(() => {
   applyTheme()
   initDarkMode()
-})
-
-onUnmounted(() => {
-  stopPlayTimeTracking()
 })
 </script>
 
@@ -366,16 +200,16 @@ onUnmounted(() => {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* 禁用 iOS 双击放大 */
 html {
   touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 button, a, input, select, textarea, [role="button"] {
   touch-action: manipulation;
 }
 
-/* Global Coin Display */
 .global-coin-display {
   position: fixed;
   top: 12px;
@@ -398,11 +232,6 @@ button, a, input, select, textarea, [role="button"] {
   --accent-color: #FF1493;
 }
 
-html {
-  -webkit-text-size-adjust: 100%;
-  -webkit-tap-highlight-color: transparent;
-}
-
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 50%, #ffecd2 100%);
@@ -413,7 +242,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Ensure proper height on iOS */
 html, body, #app {
   height: 100%;
 }
@@ -422,26 +250,14 @@ html, body, #app {
   min-height: 100vh;
   min-height: -webkit-fill-available;
   padding: 6px;
-  background: linear-gradient(
-    135deg,
-    #FF69B4,
-    #FFB6C1,
-    #FF69B4,
-    #FF1493
-  );
+  background: linear-gradient(135deg, #FF69B4, #FFB6C1, #FF69B4, #FF1493);
   border-radius: 0;
   position: relative;
   z-index: 2;
 }
 
 .app-frame.prince {
-  background: linear-gradient(
-    135deg,
-    #4A90D9,
-    #87CEEB,
-    #4A90D9,
-    #1E90FF
-  );
+  background: linear-gradient(135deg, #4A90D9, #87CEEB, #4A90D9, #1E90FF);
 }
 
 .app-container {
@@ -455,12 +271,10 @@ html, body, #app {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Default background for app container */
 .app-container:not(.custom-bg) {
   background: linear-gradient(135deg, var(--light-color) 0%, var(--background-color) 50%, var(--light-color) 100%);
 }
 
-/* Theme-specific backgrounds */
 .app-frame.princess .app-container:not(.custom-bg) {
   background: linear-gradient(135deg, #FFF5F8 0%, #FFF0F5 50%, #FFE4EC 100%);
 }
@@ -469,7 +283,6 @@ html, body, #app {
   background: linear-gradient(135deg, #F0F8FF 0%, #E6F3FF 50%, #DBEAFE 100%);
 }
 
-/* Custom theme background layer */
 .theme-background {
   position: fixed;
   top: 0;
@@ -479,7 +292,6 @@ html, body, #app {
   z-index: 0;
 }
 
-/* Custom background: make app-frame and app-container transparent */
 .app-frame.custom-theme {
   background: transparent !important;
 }
@@ -488,7 +300,6 @@ html, body, #app {
   background: transparent !important;
 }
 
-/* Better touch targets for mobile */
 @media (pointer: coarse) {
   button, .clickable, [role="button"] {
     min-height: 44px;
@@ -496,7 +307,6 @@ html, body, #app {
   }
 }
 
-/* Tablet */
 @media (max-width: 768px) {
   .app-frame {
     padding: 5px;
@@ -508,7 +318,6 @@ html, body, #app {
   }
 }
 
-/* Mobile */
 @media (max-width: 500px) {
   .app-frame {
     padding: 4px;
@@ -520,7 +329,6 @@ html, body, #app {
   }
 }
 
-/* Very small screens */
 @media (max-width: 360px) {
   .app-frame {
     padding: 3px;
@@ -532,7 +340,6 @@ html, body, #app {
   }
 }
 
-/* Safe area insets for notched phones */
 @supports (padding: max(0px)) {
   .app-frame {
     padding-left: max(6px, env(safe-area-inset-left));
@@ -549,7 +356,6 @@ html, body, #app {
   }
 }
 
-/* Prevent overscroll bounce on iOS */
 @media screen and (max-width: 768px) {
   body {
     position: fixed;
