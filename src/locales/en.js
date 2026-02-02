@@ -318,13 +318,6 @@ export default {
     stickers: {
       // Unicorns
       unicorn: 'Unicorn',
-      unicornRainbow: 'Rainbow Unicorn',
-      unicornStar: 'Star Unicorn',
-      unicornHeart: 'Heart Unicorn',
-      unicornSparkle: 'Sparkle Unicorn',
-      unicornMoon: 'Moon Unicorn',
-      unicornFlower: 'Flower Unicorn',
-      unicornCrown: 'Crown Unicorn',
       // Ocean
       dolphin: 'Dolphin',
       whale: 'Whale',
@@ -438,6 +431,8 @@ export default {
       clap: 'Clapping'
     },
     avatars: {
+      princess: 'Princess',
+      prince: 'Prince',
       redPanda: 'Red Panda'
     },
     frames: {
@@ -497,11 +492,9 @@ export default {
       progress: 'Collection Progress',
       complete: 'Complete!',
       reward: 'Reward',
-      unicornCollection: 'Unicorn Master',
       oceanCollection: 'Ocean Explorer',
       spaceCollection: 'Space Pioneer',
       sweetsCollection: 'Sweet Master',
-      unicornMaster: 'Unicorn Master Badge',
       oceanMaster: 'Ocean Master Badge',
       spaceMaster: 'Space Master Badge',
       sweetsMaster: 'Sweets Master Badge',

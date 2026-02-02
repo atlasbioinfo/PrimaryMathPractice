@@ -24,7 +24,7 @@ import { computed } from 'vue'
 import { useUserStore } from '../../stores/user'
 import { useCoinsStore } from '../../stores/coins'
 import { useLocaleStore } from '../../stores/locale'
-import { purchasableAvatars } from '../../config/shop'
+import { allAvatars } from '../../config/shop'
 import StickerShowcase from '../StickerShowcase.vue'
 
 const userStore = useUserStore()
@@ -45,7 +45,7 @@ const decorations = [
 
 const currentAvatar = computed(() => {
   if (coinsStore.equippedAvatar) {
-    const equipped = purchasableAvatars.find(a => a.id === coinsStore.equippedAvatar)
+    const equipped = allAvatars.find(a => a.id === coinsStore.equippedAvatar)
     if (equipped) {
       return `${baseUrl}${equipped.image}`
     }

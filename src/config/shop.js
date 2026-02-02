@@ -12,14 +12,7 @@ export const levelUnlockPrices = {
 // Purchasable stickers organized by series
 export const purchasableStickers = {
   unicorns: [
-    { id: 'sticker_unicorn', icon: '🦄', price: 350, nameKey: 'unicorn', collection: 'unicorn' },
-    { id: 'sticker_unicorn_rainbow', icon: '🦄🌈', price: 450, nameKey: 'unicornRainbow', collection: 'unicorn' },
-    { id: 'sticker_unicorn_star', icon: '🦄⭐', price: 400, nameKey: 'unicornStar', collection: 'unicorn' },
-    { id: 'sticker_unicorn_heart', icon: '🦄💖', price: 420, nameKey: 'unicornHeart', collection: 'unicorn' },
-    { id: 'sticker_unicorn_sparkle', icon: '🦄✨', price: 380, nameKey: 'unicornSparkle', collection: 'unicorn' },
-    { id: 'sticker_unicorn_moon', icon: '🦄🌙', price: 400, nameKey: 'unicornMoon', collection: 'unicorn' },
-    { id: 'sticker_unicorn_flower', icon: '🦄🌸', price: 390, nameKey: 'unicornFlower', collection: 'unicorn' },
-    { id: 'sticker_unicorn_crown', icon: '🦄👑', price: 500, nameKey: 'unicornCrown', collection: 'unicorn' }
+    { id: 'sticker_unicorn', icon: '🦄', price: 350, nameKey: 'unicorn' }
   ],
   special: [
     { id: 'sticker_rainbow', icon: '🌈', price: 200, nameKey: 'rainbow' },
@@ -149,16 +142,37 @@ export const purchasableStickers = {
 export const allPurchasableStickers = Object.values(purchasableStickers).flat()
 
 // Purchasable avatars
+// Default avatars (owned by all users)
+export const defaultAvatars = [
+  {
+    id: 'avatar_princess',
+    nameKey: 'princess',
+    price: 0,
+    image: 'math_princess.png',
+    isDefault: true
+  },
+  {
+    id: 'avatar_prince',
+    nameKey: 'prince',
+    price: 0,
+    image: 'math_prince.png',
+    isDefault: true
+  }
+]
+
+// Purchasable avatars
 export const purchasableAvatars = [
   {
     id: 'avatar_red_panda',
     nameKey: 'redPanda',
     price: 800,
-    image: 'red_panda.png',
-    preview: '🦝'
+    image: 'red_panda.png'
   }
   // More avatars can be added here
 ]
+
+// All avatars (default + purchasable)
+export const allAvatars = [...defaultAvatars, ...purchasableAvatars]
 
 // Avatar frames
 export const avatarFrames = [
@@ -514,22 +528,6 @@ export function getLevelUnlockPrice(level) {
 
 // Collection rewards - bonus for completing a full set
 export const collectionRewards = {
-  unicorn: {
-    nameKey: 'unicornCollection',
-    requiredStickers: [
-      'sticker_unicorn',
-      'sticker_unicorn_rainbow',
-      'sticker_unicorn_star',
-      'sticker_unicorn_heart',
-      'sticker_unicorn_sparkle',
-      'sticker_unicorn_moon',
-      'sticker_unicorn_flower',
-      'sticker_unicorn_crown'
-    ],
-    rewardCoins: 500,
-    rewardBadge: '🦄👑',
-    rewardBadgeKey: 'unicornMaster'
-  },
   ocean: {
     nameKey: 'oceanCollection',
     requiredStickers: [

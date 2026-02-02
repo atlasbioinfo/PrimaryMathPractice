@@ -4,6 +4,7 @@
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { defaultAvatars } from '../config/shop'
 
 /**
  * @typedef {Object} Transaction
@@ -130,6 +131,10 @@ export const useCoinsStore = defineStore('coins', () => {
   }
 
   function hasPurchasedItem(itemId) {
+    // Default avatars are always owned
+    if (defaultAvatars.some(a => a.id === itemId)) {
+      return true
+    }
     return purchasedItems.value.some(item => item.id === itemId)
   }
 

@@ -318,13 +318,6 @@ export default {
     stickers: {
       // Unicorns
       unicorn: '独角兽',
-      unicornRainbow: '彩虹独角兽',
-      unicornStar: '星星独角兽',
-      unicornHeart: '爱心独角兽',
-      unicornSparkle: '闪耀独角兽',
-      unicornMoon: '月光独角兽',
-      unicornFlower: '花朵独角兽',
-      unicornCrown: '皇冠独角兽',
       // Ocean
       dolphin: '海豚',
       whale: '鲸鱼',
@@ -439,6 +432,8 @@ export default {
       clap: '鼓掌'
     },
     avatars: {
+      princess: '小公主',
+      prince: '小王子',
       redPanda: '小熊猫'
     },
     frames: {
@@ -498,11 +493,9 @@ export default {
       progress: '收集进度',
       complete: '已完成！',
       reward: '奖励',
-      unicornCollection: '独角兽大师',
       oceanCollection: '海洋探险家',
       spaceCollection: '太空先驱',
       sweetsCollection: '甜蜜达人',
-      unicornMaster: '独角兽大师徽章',
       oceanMaster: '海洋大师徽章',
       spaceMaster: '太空大师徽章',
       sweetsMaster: '甜蜜大师徽章',

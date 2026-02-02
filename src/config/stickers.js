@@ -131,7 +131,7 @@ export const hiddenAchievementStickers = [
 // Get total sticker count (achievement + purchasable + hidden)
 export function getTotalStickerCount() {
   // 20 achievement stickers (5 operations × 4 levels)
-  // 28 purchasable stickers (from shop.js)
+  // 21 purchasable stickers (from shop.js)
   // 10 hidden achievement stickers
-  return 58
+  return 51
 }

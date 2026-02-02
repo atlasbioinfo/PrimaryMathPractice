@@ -10,7 +10,6 @@
   >
     <div class="avatar-preview">
       <img :src="avatarSrc" :alt="getAvatarName()" class="avatar-image" />
-      <span class="preview-emoji">{{ avatar.preview }}</span>
     </div>
 
     <div class="avatar-info">
@@ -117,17 +116,6 @@ function handleClick() {
   border: 3px solid #FFB6C1;
 }
 
-.preview-emoji {
-  position: absolute;
-  bottom: -5px;
-  right: -5px;
-  font-size: 24px;
-  background: white;
-  border-radius: 50%;
-  padding: 2px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
 .avatar-info {
   text-align: center;
 }
@@ -189,10 +177,6 @@ function handleClick() {
   .avatar-image {
     width: 65px;
     height: 65px;
-  }
-
-  .preview-emoji {
-    font-size: 20px;
   }
 
   .avatar-name {

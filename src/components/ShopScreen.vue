@@ -93,7 +93,7 @@
         <div class="section-desc">{{ t.shop.avatarsDesc }}</div>
         <div class="avatars-grid">
           <AvatarShopCard
-            v-for="avatar in purchasableAvatars"
+            v-for="avatar in allAvatars"
             :key="avatar.id"
             :avatar="avatar"
             @purchase="confirmAvatarPurchase"
@@ -153,7 +153,7 @@ import { useLocaleStore } from '../stores/locale.js'
 import { useShopPurchase } from '../composables/useShopPurchase.js'
 import {
   purchasableStickers,
-  purchasableAvatars,
+  allAvatars,
   avatarFrames,
   backgroundThemes
 } from '../config/shop.js'
