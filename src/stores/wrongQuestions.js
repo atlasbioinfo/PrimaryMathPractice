@@ -235,6 +235,7 @@ export const useWrongQuestionsStore = defineStore('wrongQuestions', () => {
     clearAll,
     recordCorrectAnswer,
     isDueForReview,
+    generateQuestionId,
     reset
   }
 })

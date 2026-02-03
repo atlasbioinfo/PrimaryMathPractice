@@ -79,12 +79,29 @@ export function useGameAnswer({ props, onCorrect, onWrong, onMoveNext }) {
    */
   function handleCorrectAnswer(answer, correctAnswer) {
     playCorrectSound()
+
+    // Check if this question is in the wrong questions list (in any mode)
+    let questionId = null
+
     if (props.isReviewMode && props.reviewQuestions.length > 0) {
-      const questionId = props.reviewQuestions[gameStore.currentQuestionIndex]
-      if (questionId) {
-        wrongQuestionsStore.recordCorrectAnswer(questionId)
+      // In review mode, get the question ID from reviewQuestions array
+      questionId = props.reviewQuestions[gameStore.currentQuestionIndex]
+    } else {
+      // In normal mode, check if this question exists in wrong questions
+      questionId = wrongQuestionsStore.generateQuestionId(props.operation, currentQuestion.value)
+
+      // Only record if this question actually exists in wrong questions
+      const existingQuestion = wrongQuestionsStore.questions.find(q => q.id === questionId)
+      if (!existingQuestion) {
+        questionId = null
       }
     }
+
+    // Record correct answer if question is in wrong questions list
+    if (questionId) {
+      wrongQuestionsStore.recordCorrectAnswer(questionId)
+    }
+
     onCorrect?.(answer, correctAnswer)
   }
 
