@@ -59,7 +59,11 @@ export function useScreenRouter() {
     isReviewMode.value = true
     reviewQuestionIds.value = wrongQuestions.map(wq => wq.id)
 
-    const questions = wrongQuestions.map(wq => wq.question)
+    // Fix: Ensure question objects have the correct answer from correctAnswer field
+    const questions = wrongQuestions.map(wq => ({
+      ...wq.question,
+      answer: wq.correctAnswer // Use the stored correctAnswer, not question.answer
+    }))
     gameStore.startGame(firstQ.operation, firstQ.level, questions)
     currentScreen.value = 'playing'
   }

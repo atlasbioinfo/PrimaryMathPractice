@@ -124,6 +124,7 @@ import { onMounted, defineAsyncComponent } from 'vue'
 import { NConfigProvider, NMessageProvider, NDialogProvider } from 'naive-ui'
 import { useUserStore } from './stores/user.js'
 import { useLocaleStore } from './stores/locale.js'
+import { useWrongQuestionsStore } from './stores/wrongQuestions.js'
 import { useTheme } from './composables/useTheme.js'
 import { useScreenRouter } from './composables/useScreenRouter.js'
 import { useBackground } from './composables/useBackground.js'
@@ -152,6 +153,7 @@ const WrongQuestionsScreen = defineAsyncComponent(() => import('./components/Wro
 // Stores
 const userStore = useUserStore()
 const localeStore = useLocaleStore()
+const wrongQuestionsStore = useWrongQuestionsStore()
 
 // Theme
 const { themeOverrides, applyTheme, initDarkMode } = useTheme()
@@ -189,6 +191,9 @@ const { showRestReminder, playTimeStore, handleRestReminderClose } = usePlayTime
 onMounted(() => {
   applyTheme()
   initDarkMode()
+
+  // Fix any corrupted wrong questions data on startup
+  wrongQuestionsStore.fixDataIntegrity()
 })
 </script>
 

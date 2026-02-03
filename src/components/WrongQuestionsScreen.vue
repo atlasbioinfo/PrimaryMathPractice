@@ -57,6 +57,7 @@
               v-for="item in questions.slice(0, 5)"
               :key="item.id"
               class="question-item"
+              @click="debugQuestion(item)"
             >
               <div class="question-display">
                 <template v-if="item.question.fraction1">
@@ -158,6 +159,21 @@ function confirmClear() {
 
 function startPractice() {
   emit('practice', wrongQuestionsStore.getQuestionsForPractice(10))
+}
+
+// Debug function to inspect question data
+function debugQuestion(item) {
+  console.group('🔍 Wrong Question Debug Info')
+  console.log('Question ID:', item.id)
+  console.log('Operation:', item.operation)
+  console.log('Level:', item.level)
+  console.log('Question Object:', item.question)
+  console.log('User Answer:', item.userAnswer)
+  console.log('Correct Answer:', item.correctAnswer)
+  console.log('Wrong Count:', item.wrongCount)
+  console.log('Correct Streak:', item.correctStreak)
+  console.log('Next Review At:', item.nextReviewAt)
+  console.groupEnd()
 }
 </script>
 

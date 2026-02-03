@@ -1,7 +1,7 @@
 <template>
   <div
     class="wrong-questions-card"
-    :class="{ empty: !wrongQuestionsStore.hasQuestions, clickable: wrongQuestionsStore.hasQuestions }"
+    :class="{ empty: wrongQuestionsStore.dueCount === 0, clickable: wrongQuestionsStore.hasQuestions }"
     @click="handleClick"
   >
     <div class="card-header">
@@ -9,10 +9,11 @@
       <h3 class="card-title">{{ t.wrongQuestions?.title || 'Review Mistakes' }}</h3>
     </div>
 
-    <div v-if="wrongQuestionsStore.hasQuestions" class="has-questions">
+    <!-- Only show badge when there are questions due for review -->
+    <div v-if="wrongQuestionsStore.dueCount > 0" class="has-questions">
       <div class="count-badge">
-        <span class="count-number">{{ wrongQuestionsStore.totalCount }}</span>
-        <span class="count-label">{{ t.wrongQuestions?.count?.replace('{count}', '') || 'mistakes' }}</span>
+        <span class="count-number">{{ wrongQuestionsStore.dueCount }}</span>
+        <span class="count-label">{{ t.wrongQuestions?.dueNow || 'due now' }}</span>
       </div>
       <div class="operation-preview">
         <span
@@ -26,6 +27,14 @@
       <p class="cta-text">{{ t.wrongQuestions?.practice || 'Practice Now' }}</p>
     </div>
 
+    <!-- Show when all questions are waiting for next review -->
+    <div v-else-if="wrongQuestionsStore.totalCount > 0" class="no-questions waiting">
+      <div class="success-icon">⏰</div>
+      <p class="empty-text">{{ t.wrongQuestions?.allReviewed || 'All Reviewed!' }}</p>
+      <p class="empty-desc">{{ wrongQuestionsStore.totalCount }} {{ t.wrongQuestions?.waiting || 'waiting' }}</p>
+    </div>
+
+    <!-- Show when no mistakes at all -->
     <div v-else class="no-questions">
       <div class="success-icon">🎉</div>
       <p class="empty-text">{{ t.wrongQuestions?.empty || 'No mistakes!' }}</p>
@@ -47,10 +56,17 @@ const localeStore = useLocaleStore()
 
 const t = computed(() => localeStore.t)
 
+// Only show operations that have questions due for review
 const previewOperations = computed(() => {
-  const ops = wrongQuestionsStore.questionsByOperation
+  const grouped = {}
+  wrongQuestionsStore.dueQuestions.forEach(q => {
+    if (!grouped[q.operation]) {
+      grouped[q.operation] = []
+    }
+    grouped[q.operation].push(q)
+  })
   // Show only first 3 operations
-  const entries = Object.entries(ops).slice(0, 3)
+  const entries = Object.entries(grouped).slice(0, 3)
   return Object.fromEntries(entries)
 })
 
@@ -88,6 +104,18 @@ function handleClick() {
 .wrong-questions-card.empty {
   border-color: #52C41A;
   background: linear-gradient(135deg, #F6FFED, #D9F7BE);
+}
+
+.no-questions.waiting .success-icon {
+  font-size: 28px;
+}
+
+.no-questions.waiting .empty-text {
+  color: #1890FF;
+}
+
+.no-questions.waiting .empty-desc {
+  color: #69C0FF;
 }
 
 .card-header {

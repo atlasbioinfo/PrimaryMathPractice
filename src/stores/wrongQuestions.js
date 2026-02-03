@@ -214,6 +214,37 @@ export const useWrongQuestionsStore = defineStore('wrongQuestions', () => {
     }
   }
 
+  /**
+   * Fix data integrity: ensure question.answer matches correctAnswer
+   * This fixes any corrupted data where question.answer was wrong
+   */
+  function fixDataIntegrity() {
+    let fixedCount = 0
+    questions.value.forEach(q => {
+      if (q.question && q.correctAnswer) {
+        // Check if question.answer doesn't match correctAnswer
+        const answerMismatch = typeof q.correctAnswer === 'object'
+          ? (q.question.answer?.numerator !== q.correctAnswer.numerator ||
+             q.question.answer?.denominator !== q.correctAnswer.denominator)
+          : q.question.answer !== q.correctAnswer
+
+        if (answerMismatch) {
+          // Fix it by updating question.answer to match correctAnswer
+          q.question.answer = q.correctAnswer
+          fixedCount++
+          console.warn(`Fixed wrong answer for question ${q.id}:`, {
+            oldAnswer: q.question.answer,
+            correctAnswer: q.correctAnswer
+          })
+        }
+      }
+    })
+    if (fixedCount > 0) {
+      console.log(`Fixed ${fixedCount} corrupted questions`)
+    }
+    return fixedCount
+  }
+
   function reset() {
     questions.value = []
   }
@@ -236,6 +267,7 @@ export const useWrongQuestionsStore = defineStore('wrongQuestions', () => {
     recordCorrectAnswer,
     isDueForReview,
     generateQuestionId,
+    fixDataIntegrity,
     reset
   }
 })
