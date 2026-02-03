@@ -167,6 +167,12 @@ export const purchasableAvatars = [
     nameKey: 'redPanda',
     price: 800,
     image: 'red_panda.png'
+  },
+  {
+    id: 'avatar_panda_queen',
+    nameKey: 'pandaQueen',
+    price: 500,
+    image: 'panda_queen.png'
   }
   // More avatars can be added here
 ]

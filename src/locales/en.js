@@ -433,7 +433,8 @@ export default {
     avatars: {
       princess: 'Princess',
       prince: 'Prince',
-      redPanda: 'Red Panda'
+      redPanda: 'Red Panda',
+      pandaQueen: 'Panda Queen'
     },
     frames: {
       gold: 'Golden Frame',

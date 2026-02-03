@@ -434,7 +434,8 @@ export default {
     avatars: {
       princess: '小公主',
       prince: '小王子',
-      redPanda: '小熊猫'
+      redPanda: '小熊猫',
+      pandaQueen: '熊猫女王'
     },
     frames: {
       gold: '金色边框',
